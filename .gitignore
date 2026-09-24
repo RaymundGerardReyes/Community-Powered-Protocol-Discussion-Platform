@@ -1,0 +1,41 @@
+# Agent rules & scratch
+.agents/
+.agent/
+_agents/
+_agent/
+*.rules.md
+
+# PHP / Composer
+/backend/vendor/
+/backend/.env
+/backend/.env.backup
+/backend/.env.production
+/backend/.phpunit.result.cache
+/backend/database/*.sqlite
+/backend/database/*.sqlite-*
+/backend/storage/*.key
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/logs/*
+!/backend/storage/logs/.gitignore
+!/backend/storage/framework/cache/.gitignore
+!/backend/storage/framework/sessions/.gitignore
+!/backend/storage/framework/views/.gitignore
+/backend/bootstrap/cache/*
+!/backend/bootstrap/cache/.gitignore
+
+# Node / Frontend
+/frontend/node_modules/
+/frontend/.next/
+/frontend/out/
+/frontend/build/
+/frontend/.env*.local
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
