@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Review
+ * @mixin Review
  */
 class ReviewResource extends JsonResource
 {

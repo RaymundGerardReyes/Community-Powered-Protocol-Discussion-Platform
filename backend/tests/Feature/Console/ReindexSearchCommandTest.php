@@ -1,7 +1,6 @@
 <?php
 
 use App\Events\VoteCast;
-use App\Listeners\SyncSearchIndex;
 use App\Models\Protocol;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

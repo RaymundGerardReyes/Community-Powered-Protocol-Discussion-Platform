@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Thread;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Thread
+ * @mixin Thread
  */
 class ThreadResource extends JsonResource
 {
