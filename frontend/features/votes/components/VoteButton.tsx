@@ -4,7 +4,7 @@ import { useVote } from '../hooks/useVote';
 import type { VoteResponse } from '@/types';
 
 export interface VoteButtonProps {
-  votableType: string;
+  votableType: 'App\\Models\\Protocol' | 'App\\Models\\Thread' | 'App\\Models\\Comment' | string;
   votableId: number;
   currentVote: 1 | -1 | null;
   count: number;
@@ -46,8 +46,13 @@ export function VoteButton({
       disabled={isPending}
       aria-label="Upvote"
       aria-pressed={upActive}
-      className={cn('vote-btn vote-btn-up', upActive && 'active')}
-      style={upActive ? { color: '#818cf8', background: 'rgba(99,102,241,0.15)' } : { color: 'var(--text-muted)' }}
+      className={cn(
+        'flex h-7 w-7 items-center justify-center rounded text-xs transition-colors',
+        'hover:bg-indigo-50 disabled:pointer-events-none disabled:opacity-50',
+        upActive
+          ? 'bg-indigo-100 text-indigo-600 font-semibold'
+          : 'text-slate-500 hover:text-indigo-600'
+      )}
     >
       ▲
     </button>
@@ -55,10 +60,10 @@ export function VoteButton({
 
   const CountEl = (
     <span
-      className="tabular-nums text-xs font-semibold min-w-[2ch] text-center"
-      style={{
-        color: upActive ? '#818cf8' : downActive ? '#f87171' : 'var(--text-secondary)',
-      }}
+      className={cn(
+        'min-w-[2ch] text-center text-xs font-semibold tabular-nums',
+        upActive ? 'text-indigo-600' : downActive ? 'text-red-500' : 'text-slate-700'
+      )}
     >
       {count}
     </span>
@@ -71,8 +76,13 @@ export function VoteButton({
       disabled={isPending}
       aria-label="Downvote"
       aria-pressed={downActive}
-      className={cn('vote-btn vote-btn-down', downActive && 'active')}
-      style={downActive ? { color: '#f87171', background: 'rgba(239,68,68,0.12)' } : { color: 'var(--text-muted)' }}
+      className={cn(
+        'flex h-7 w-7 items-center justify-center rounded text-xs transition-colors',
+        'hover:bg-red-50 disabled:pointer-events-none disabled:opacity-50',
+        downActive
+          ? 'bg-red-100 text-red-500 font-semibold'
+          : 'text-slate-500 hover:text-red-500'
+      )}
     >
       ▼
     </button>
@@ -80,7 +90,7 @@ export function VoteButton({
 
   if (layout === 'vertical') {
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center gap-0.5">
         {UpBtn}
         {CountEl}
         {DownBtn}
@@ -89,7 +99,7 @@ export function VoteButton({
   }
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1">
       {UpBtn}
       {CountEl}
       {DownBtn}
