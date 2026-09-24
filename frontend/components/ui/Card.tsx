@@ -1,12 +1,22 @@
 import { cn } from '@/lib/cn';
 
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  hoverable?: boolean;
+}
+
+export function Card({ className, hoverable = false, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-slate-200 bg-white p-5 shadow-sm',
+        hoverable ? 'card' : 'card-flat',
+        'p-5',
         className,
       )}
+      style={{
+        background: 'var(--surface-card)',
+        borderColor: 'var(--surface-overlay)',
+        color: 'var(--text-primary)',
+      }}
       {...props}
     />
   );

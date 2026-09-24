@@ -1,34 +1,66 @@
 import Link from 'next/link';
-import { VoteButton } from '@/features/votes/components/VoteButton';
+import { VoteButtonWrapper } from '@/features/votes/components/VoteButtonWrapper';
 import type { Thread } from '@/types';
 
 export function ThreadCard({ thread }: { thread: Thread }) {
   return (
-    <article className='rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow'>
-      <div className='flex items-start gap-3'>
-        <VoteButton
-          votableType='App\\Models\\Thread'
+    <article
+      className="card-flat flex items-start gap-4 p-4 transition-all hover:border-[rgba(99,102,241,0.3)]"
+    >
+      {/* Vote column */}
+      <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
+        <VoteButtonWrapper
+          votableType="App\\Models\\Thread"
           votableId={thread.id}
-          currentVote={null}
           count={thread.votes_count}
           queryKey={['thread', thread.id]}
         />
-        <div className='min-w-0 flex-1'>
-          <Link
-            href={`/threads/${thread.id}`}
-            className='font-medium text-slate-900 hover:text-indigo-600 transition-colors'
+      </div>
+
+      {/* Content */}
+      <div className="min-w-0 flex-1">
+        <Link
+          href={`/threads/${thread.id}`}
+          className="group block"
+        >
+          <h3
+            className="text-sm font-semibold leading-snug group-hover:text-[var(--brand)] transition-colors line-clamp-2"
+            style={{ color: 'var(--text-primary)' }}
           >
             {thread.title}
-          </Link>
-          <p className='mt-1 text-sm text-slate-500 line-clamp-2'>{thread.body}</p>
-          <div className='mt-2 flex items-center gap-3 text-xs text-slate-400'>
-            <span>By {thread.author?.name}</span>
-            <span>{thread.comments_count} comments</span>
-            <span>{thread.views_count} views</span>
-            <time dateTime={thread.created_at}>
-              {new Date(thread.created_at).toLocaleDateString()}
-            </time>
-          </div>
+          </h3>
+        </Link>
+        {thread.body && (
+          <p
+            className="mt-1 text-xs leading-relaxed line-clamp-2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {thread.body}
+          </p>
+        )}
+        <div
+          className="mt-2 flex flex-wrap items-center gap-3 text-xs"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          <span>{thread.author?.name}</span>
+          <span className="flex items-center gap-1">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            {thread.comments_count}
+          </span>
+          <span className="flex items-center gap-1">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            {thread.views_count}
+          </span>
+          <time dateTime={thread.created_at}>
+            {new Date(thread.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+            })}
+          </time>
         </div>
       </div>
     </article>

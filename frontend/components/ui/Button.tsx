@@ -15,19 +15,17 @@ export function Button({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50',
+        'btn',
         {
-          'bg-indigo-600 text-white hover:bg-indigo-700': variant === 'primary',
-          'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50':
-            variant === 'secondary',
-          'text-slate-600 hover:bg-slate-100 hover:text-slate-900':
-            variant === 'ghost',
-          'bg-red-600 text-white hover:bg-red-700': variant === 'danger',
+          'btn-primary': variant === 'primary',
+          'btn-secondary': variant === 'secondary',
+          'btn-ghost': variant === 'ghost',
+          'bg-red-600/90 text-white hover:bg-red-600 border border-red-500/30': variant === 'danger',
         },
         {
-          'h-8 px-3 text-sm': size === 'sm',
-          'h-10 px-4 text-sm': size === 'md',
-          'h-12 px-6 text-base': size === 'lg',
+          'btn-sm': size === 'sm',
+          'btn-md': size === 'md',
+          'btn-lg': size === 'lg',
         },
         className,
       )}

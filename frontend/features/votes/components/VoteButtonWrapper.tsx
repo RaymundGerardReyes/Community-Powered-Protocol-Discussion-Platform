@@ -6,9 +6,16 @@ interface Props {
   votableId: number;
   count: number;
   queryKey?: unknown[];
+  layout?: 'horizontal' | 'vertical';
 }
 
-export function VoteButtonWrapper({ votableType, votableId, count, queryKey }: Props) {
+export function VoteButtonWrapper({
+  votableType,
+  votableId,
+  count,
+  queryKey,
+  layout = 'horizontal',
+}: Props) {
   return (
     <VoteButton
       votableType={votableType}
@@ -16,6 +23,7 @@ export function VoteButtonWrapper({ votableType, votableId, count, queryKey }: P
       currentVote={null}
       count={count}
       queryKey={queryKey}
+      layout={layout}
     />
   );
 }

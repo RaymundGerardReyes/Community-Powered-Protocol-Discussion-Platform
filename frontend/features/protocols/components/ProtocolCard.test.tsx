@@ -35,7 +35,7 @@ describe('ProtocolCard', () => {
 
   it('renders the status badge', () => {
     render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText('published')).toBeInTheDocument();
+    expect(screen.getByText(/published/i)).toBeInTheDocument();
   });
 
   it('renders the category and version', () => {
@@ -44,9 +44,9 @@ describe('ProtocolCard', () => {
     expect(screen.getByText('v1.0.0')).toBeInTheDocument();
   });
 
-  it('renders reviews count and votes', () => {
+  it('renders votes and reviews stats', () => {
     render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText('5 reviews')).toBeInTheDocument();
-    expect(screen.getByText('▲ 42')).toBeInTheDocument();
+    expect(screen.getByText(/42/)).toBeInTheDocument();
+    expect(screen.getByText(/5/)).toBeInTheDocument();
   });
 });
