@@ -3,47 +3,55 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreReviewRequest;
+use App\Http\Resources\ReviewResource;
+use App\Models\Protocol;
+use App\Models\Review;
+use App\Services\ReviewService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ReviewController extends Controller
 {
+    public function __construct(
+        protected ReviewService $service
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * Display a listing of reviews for a protocol.
      */
-    public function index()
+    public function index(Protocol $protocol): AnonymousResourceCollection
     {
-        //
+        $reviews = $protocol->reviews()
+            ->with('user')
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return ReviewResource::collection($reviews);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created review for a protocol.
      */
-    public function store(Request $request)
+    public function store(StoreReviewRequest $request, Protocol $protocol): JsonResponse
     {
-        //
+        $review = $this->service->create($request->user(), $protocol, $request->validated());
+
+        return (new ReviewResource($review->load('user')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
-     * Display the specified resource.
+     * Remove the specified review.
      */
-    public function show(string $id)
+    public function destroy(Request $request, Review $review): JsonResponse
     {
-        //
-    }
+        $this->service->delete($review, $request->user());
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'message' => 'Review deleted successfully',
+        ]);
     }
 }

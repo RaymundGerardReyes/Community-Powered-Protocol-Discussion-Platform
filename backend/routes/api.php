@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ProtocolController;
+use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\ThreadController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,9 @@ Route::get('/protocols/{slug}', [ProtocolController::class, 'show']);
 Route::get('/protocols/{protocol}/threads', [ThreadController::class, 'index']);
 Route::get('/threads/{id}', [ThreadController::class, 'show']);
 
+// Review public endpoints
+Route::get('/protocols/{protocol}/reviews', [ReviewController::class, 'index']);
+
 // Authenticated mutations
 Route::middleware('auth:sanctum')->group(function () {
     // Protocols
@@ -49,4 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Comments
     Route::post('/threads/{thread}/comments', [CommentController::class, 'store']);
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+
+    // Reviews
+    Route::post('/protocols/{protocol}/reviews', [ReviewController::class, 'store']);
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });

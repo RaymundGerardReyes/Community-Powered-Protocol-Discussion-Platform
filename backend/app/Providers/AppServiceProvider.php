@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Review;
+use App\Observers\ReviewObserver;
 use App\Repositories\Contracts\ProtocolRepositoryInterface;
 use App\Repositories\Contracts\ThreadRepositoryInterface;
 use App\Repositories\Eloquent\ProtocolRepository;
@@ -31,6 +33,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Review::observe(ReviewObserver::class);
     }
 }

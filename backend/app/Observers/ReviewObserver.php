@@ -2,24 +2,18 @@
 
 namespace App\Observers;
 
+use App\Models\Protocol;
 use App\Models\Review;
+use Illuminate\Support\Facades\Log;
 
 class ReviewObserver
 {
     /**
-     * Handle the Review "created" event.
+     * Handle the Review "saved" event (created or updated).
      */
-    public function created(Review $review): void
+    public function saved(Review $review): void
     {
-        //
-    }
-
-    /**
-     * Handle the Review "updated" event.
-     */
-    public function updated(Review $review): void
-    {
-        //
+        $this->recalculateProtocolReviewStats($review->protocol_id);
     }
 
     /**
@@ -27,22 +21,33 @@ class ReviewObserver
      */
     public function deleted(Review $review): void
     {
-        //
+        $this->recalculateProtocolReviewStats($review->protocol_id);
     }
 
     /**
-     * Handle the Review "restored" event.
+     * Atomically recalculate review counts and average rating on parent protocol.
      */
-    public function restored(Review $review): void
+    protected function recalculateProtocolReviewStats(int $protocolId): void
     {
-        //
-    }
+        $protocol = Protocol::find($protocolId);
+        if (! $protocol) {
+            return;
+        }
 
-    /**
-     * Handle the Review "force deleted" event.
-     */
-    public function forceDeleted(Review $review): void
-    {
-        //
+        $reviewsCount = $protocol->reviews()->count();
+        $averageRating = $reviewsCount > 0
+            ? round((float) $protocol->reviews()->avg('rating'), 2)
+            : 0.00;
+
+        $protocol->update([
+            'reviews_count' => $reviewsCount,
+            'average_rating' => $averageRating,
+        ]);
+
+        Log::info('protocol.reviews_recalculated', [
+            'protocol_id' => $protocolId,
+            'reviews_count' => $reviewsCount,
+            'average_rating' => $averageRating,
+        ]);
     }
 }
