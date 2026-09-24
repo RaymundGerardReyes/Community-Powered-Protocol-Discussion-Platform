@@ -99,7 +99,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
             {/* Actions: Vote + Reply */}
             <div className="mt-3 flex items-center gap-4 text-xs">
               <VoteButton
-                votableType="App\\Models\\Comment"
+                votableType="App\Models\Comment"
                 votableId={comment.id}
                 currentVote={null}
                 count={0}

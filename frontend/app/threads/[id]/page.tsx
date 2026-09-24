@@ -93,7 +93,7 @@ export default async function ThreadDetailPage({ params }: PageProps) {
           {/* Vertical Vote Button */}
           <div className="shrink-0 pt-1">
             <VoteButtonWrapper
-              votableType="App\\Models\\Thread"
+              votableType="App\Models\Thread"
               votableId={thread.id}
               count={thread.votes_count}
               queryKey={['thread', thread.id]}

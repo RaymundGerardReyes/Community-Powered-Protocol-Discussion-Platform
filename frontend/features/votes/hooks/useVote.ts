@@ -11,14 +11,18 @@ interface VotePayload {
   queryKey?: unknown[];
 }
 
+interface VoteContext {
+  snapshot?: unknown;
+}
+
 export function useVote() {
   const queryClient = useQueryClient();
 
-  return useMutation<VoteResponse, Error, VotePayload>({
+  return useMutation<VoteResponse, Error, VotePayload, VoteContext>({
     mutationFn: ({ votable_type, votable_id, value }) =>
       castVote({ votable_type, votable_id, value }),
     onMutate: async ({ queryKey, value }) => {
-      if (!queryKey) return;
+      if (!queryKey) return {};
       await queryClient.cancelQueries({ queryKey });
       const snapshot = queryClient.getQueryData(queryKey);
       queryClient.setQueryData(queryKey, (old: Record<string, unknown> | undefined) => {

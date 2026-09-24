@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { ProtocolCard } from './ProtocolCard';
 import type { Protocol } from '@/types';
@@ -28,25 +28,25 @@ const mockProtocol: Protocol = {
 
 describe('ProtocolCard', () => {
   it('renders protocol title and author', () => {
-    render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText('Consensus Layer Upgrade')).toBeInTheDocument();
-    expect(screen.getByText('Alice')).toBeInTheDocument();
+    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    expect(getByText('Consensus Layer Upgrade')).toBeDefined();
+    expect(getByText('Alice')).toBeDefined();
   });
 
   it('renders the status badge', () => {
-    render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText(/published/i)).toBeInTheDocument();
+    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    expect(getByText(/published/i)).toBeDefined();
   });
 
   it('renders the category and version', () => {
-    render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText('infrastructure')).toBeInTheDocument();
-    expect(screen.getByText('v1.0.0')).toBeInTheDocument();
+    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    expect(getByText('infrastructure')).toBeDefined();
+    expect(getByText('v1.0.0')).toBeDefined();
   });
 
   it('renders votes and reviews stats', () => {
-    render(<ProtocolCard protocol={mockProtocol} />);
-    expect(screen.getByText(/42/)).toBeInTheDocument();
-    expect(screen.getByText(/5/)).toBeInTheDocument();
+    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    expect(getByText(/42/)).toBeDefined();
+    expect(getByText(/5/)).toBeDefined();
   });
 });
