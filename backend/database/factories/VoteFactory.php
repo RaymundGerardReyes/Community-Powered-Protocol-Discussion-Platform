@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Protocol;
+use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class VoteFactory extends Factory
 {
+    protected $model = Vote::class;
+
     /**
      * Define the model's default state.
      *
@@ -18,7 +22,10 @@ class VoteFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => User::factory(),
+            'votable_type' => Protocol::class,
+            'votable_id' => Protocol::factory(),
+            'value' => 1,
         ];
     }
 }

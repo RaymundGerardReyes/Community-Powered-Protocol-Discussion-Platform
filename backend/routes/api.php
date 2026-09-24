@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ProtocolController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\ThreadController;
+use App\Http\Controllers\Api\V1\VoteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -57,4 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reviews
     Route::post('/protocols/{protocol}/reviews', [ReviewController::class, 'store']);
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+
+    // Votes (polymorphic)
+    Route::post('/votes', [VoteController::class, 'store']);
 });
