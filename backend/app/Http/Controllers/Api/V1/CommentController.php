@@ -10,12 +10,27 @@ use App\Models\Thread;
 use App\Services\CommentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CommentController extends Controller
 {
     public function __construct(
         protected CommentService $service
     ) {}
+
+    /**
+     * Display a listing of comments for a thread.
+     */
+    public function index(Thread $thread): AnonymousResourceCollection
+    {
+        $comments = $thread->comments()
+            ->whereNull('parent_id')
+            ->with(['user', 'replies.user'])
+            ->orderBy('created_at')
+            ->get();
+
+        return CommentResource::collection($comments);
+    }
 
     /**
      * Store a newly created comment or nested reply on a thread.

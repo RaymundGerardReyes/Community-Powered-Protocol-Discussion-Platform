@@ -27,7 +27,7 @@ export function VoteButton({
   function handleVote(value: 1 | -1) {
     mutate(
       {
-        votable_type: votableType as 'App\\Models\\Thread' | 'App\\Models\\Comment',
+        votable_type: votableType as 'App\\Models\\Protocol' | 'App\\Models\\Thread' | 'App\\Models\\Comment',
         votable_id: votableId,
         value,
         queryKey,

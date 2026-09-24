@@ -11,11 +11,10 @@ export function useProtocolSearch(query: string, debounceMs = 300) {
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
       return;
     }
-    setIsPending(true);
     const timer = setTimeout(async () => {
+      setIsPending(true);
       try {
         const ts = await searchProtocols(query);
         if (ts) {
@@ -35,8 +34,11 @@ export function useProtocolSearch(query: string, debounceMs = 300) {
         setIsPending(false);
       }
     }, debounceMs);
+
     return () => clearTimeout(timer);
   }, [query, debounceMs]);
 
-  return { results, isPending };
+  const activeResults = query.trim() ? results : [];
+
+  return { results: activeResults, isPending: query.trim() ? isPending : false };
 }

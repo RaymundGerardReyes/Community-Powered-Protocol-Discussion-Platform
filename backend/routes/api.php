@@ -35,6 +35,7 @@ Route::get('/protocols/{slug}', [ProtocolController::class, 'show']);
 // Thread public endpoints
 Route::get('/protocols/{protocol}/threads', [ThreadController::class, 'index']);
 Route::get('/threads/{id}', [ThreadController::class, 'show']);
+Route::get('/threads/{thread}/comments', [CommentController::class, 'index']);
 
 // Review public endpoints
 Route::get('/protocols/{protocol}/reviews', [ReviewController::class, 'index']);

@@ -6,5 +6,6 @@ parameters:
         - app/
     level: 5
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         - '#missingType.generics#'

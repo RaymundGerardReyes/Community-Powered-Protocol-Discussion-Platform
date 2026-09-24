@@ -97,7 +97,7 @@ class Protocol extends Model
             'status' => $this->status,
             'score' => (int) $this->score,
             'average_rating' => (float) $this->average_rating,
-            'created_at' => $this->created_at?->timestamp ?? time(),
+            'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
     }
 }

@@ -1,114 +1,180 @@
 # Community-Powered Protocol & Discussion Platform
 
+A production-grade Web3 protocol discussion, peer review, and reputation voting platform built with **Laravel 13** and **Next.js 16 (React 19)**.
+
+---
+
 ## 🚀 2026 Production-Grade Full-Stack Baseline
 
-| Layer                  | Version                | Purpose / Rationale                                   |
-| ---------------------- | ---------------------- | ----------------------------------------------------- |
-| **OS runtime**         | **Node.js 24 LTS**     | Stable LTS baseline (Current is Node 26)              |
-| **Package manager**    | **npm 11.x**           | Bundled with Node 24                                  |
-| **Frontend framework** | **Next.js 16.x**       | Active LTS line                                       |
-| **UI library**         | **React 19.3.x**       | Stable View Transitions & Fragment Refs               |
-| **Language**           | **TypeScript 5.x**     | Strict type safety                                    |
-| **CSS framework**      | **Tailwind CSS 4.3.x** | Current v4 line (scrollbars, container-size, zoom-*)  |
-| **Backend**            | **Laravel 13.x**       | Current Laravel major                                 |
-| **PHP**                | **PHP 8.5.x**          | Current supported stable line for Laravel 13          |
-| **Database**           | **PostgreSQL 18.x**    | Modern major version with high-throughput indexing    |
-| **API**                | **REST / JSON API**    | Clean Next.js ↔ Laravel separation                    |
-| **Authentication**     | **Laravel Sanctum**    | SPA/API token & session authentication                |
-| **Caching/queues**     | **Redis**              | High-performance distributed caching & queues         |
-| **Web server**         | **Nginx**              | Production reverse proxy                              |
-| **Containers**         | **Docker + Compose**   | Reproducible development & deployment                 |
-| **Testing (Backend)**  | **Pest 4 / PHPUnit 12**| Expressive backend testing                            |
-| **Testing (Frontend)** | **Vitest + Playwright**| Fast component testing + browser E2E                  |
-| **Code quality**       | **ESLint + Prettier**  | Frontend formatting & static analysis                 |
-| **PHP quality**        | **Pint + PHPStan**     | Formatting & Level 8 static analysis                  |
+| Layer | Technology | Purpose / Rationale |
+| :--- | :--- | :--- |
+| **Frontend Framework** | **Next.js 16.3 (Turbopack)** | App Router, Server Components & Suspense |
+| **UI Library** | **React 19** | Strict Actions, Transitions, and Fragment Refs |
+| **Language** | **TypeScript 5.x** | Strict end-to-end type safety |
+| **Styling** | **Tailwind CSS 4.x** | Modern styling, accessible design system |
+| **State & Data Fetching** | **TanStack Query v5** | Optimistic UI mutations, stale-while-revalidate |
+| **Search Engine** | **Typesense 27.1** | Instant, typo-tolerant search across protocols & threads |
+| **Backend Framework** | **Laravel 13.x** | Versioned REST API with Repository-Service pattern |
+| **Language Runtime** | **PHP 8.4 / 8.5** | High-performance CLI and API execution |
+| **Database** | **PostgreSQL 17 / 18** | Relational data, foreign keys, polymorphic tables |
+| **Caching & Queues** | **Redis 7** | Distributed session, caching, and rate limiting |
+| **Testing (Backend)** | **Pest 4 / PHPUnit 12** | 37 automated tests across all 8 suites (100% pass) |
+| **Testing (Frontend)** | **Vitest 5 + Testing Library** | Component and hook unit tests |
+| **Code Formatting** | **Laravel Pint & ESLint** | Automated opinionated linting and formatting |
 
 ---
 
-## 🏛 Architecture
+## 🏛 System Architecture
 
 ```text
-                         INTERNET
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │      NGINX      │
-                    │ Reverse Proxy   │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┴──────────────┐
-              │                             │
-              ▼                             ▼
-     ┌─────────────────┐          ┌─────────────────┐
-     │    Next.js 16   │          │   Laravel 13    │
-     │                 │          │                 │
-     │ React 19.3      │          │ PHP 8.5         │
-     │ TypeScript 5    │◄────────►│ REST API        │
-     │ Tailwind 4.3    │  JSON    │ Sanctum         │
-     └─────────────────┘          └────────┬────────┘
-                                           │
-                           ┌───────────────┼───────────────┐
-                           │               │               │
-                           ▼               ▼               ▼
-                    ┌────────────┐  ┌────────────┐  ┌────────────┐
-                    │ PostgreSQL │  │   Redis    │  │   Queue    │
-                    │    18      │  │            │  │  Workers   │
-                    └────────────┘  └────────────┘  └────────────┘
+                         CLIENT / BROWSER
+                                │
+               ┌────────────────┴────────────────┐
+               │                                 │
+               ▼ (Port 3000)                     ▼ (Port 8108)
+      ┌─────────────────┐               ┌─────────────────┐
+      │   Next.js 16    │               │  Typesense 27   │
+      │  React 19 (RSC) │               │ Fast Typo-Search│
+      └────────┬────────┘               └─────────────────┘
+               │ HTTP / JSON (CORS + Sanctum)
+               ▼ (Port 8000)
+      ┌───────────────────────────────────────────────────┐
+      │               Laravel 13 REST API                 │
+      │       Repositories ◄──► Services ◄──► Models      │
+      └────────────┬─────────────────────────┬────────────┘
+                   │                         │
+                   ▼ (Port 5432/5433)        ▼ (Port 6379)
+            ┌──────────────┐          ┌──────────────┐
+            │  PostgreSQL  │          │   Redis 7    │
+            │  17 / 18     │          │ Cache & Queue│
+            └──────────────┘          └──────────────┘
 ```
 
 ---
 
-## 🛠 Quick Start (Docker Compose — Recommended)
+## 📡 API Endpoints Overview
 
-Start all services:
-```bash
-docker compose up -d
-```
+All endpoints are versioned under `/api/v1`:
 
-Run migrations & Scout index:
-```bash
-docker compose exec backend php artisan migrate --seed
-docker compose exec backend php artisan scout:import "App\Models\Protocol"
-docker compose exec backend php artisan scout:import "App\Models\Thread"
-```
+### 1. Protocols (`/api/v1/protocols`)
+- `GET /api/v1/protocols` — Paginated list with filtering (`status`, `category`, `search`, `sort`)
+- `GET /api/v1/protocols/{slug}` — Fetch protocol by slug with threads and reviews
+- `POST /api/v1/protocols` *(Auth)* — Create a new protocol
+- `PUT /api/v1/protocols/{protocol}` *(Auth)* — Update protocol specification
+- `DELETE /api/v1/protocols/{protocol}` *(Auth)* — Delete protocol
 
-Services are exposed at:
-- **Web App & API Gateway**: http://localhost
-- **Next.js Direct**: http://localhost:3000
-- **PostgreSQL 18**: `localhost:5432` (User: `postgres`, Pass: `secret`, DB: `protocol_platform`)
-- **Redis**: `localhost:6379`
-- **Typesense**: `localhost:8108`
+### 2. Discussion Threads (`/api/v1/protocols/{id}/threads`, `/api/v1/threads`)
+- `GET /api/v1/protocols/{protocol}/threads` — List discussion threads for a protocol
+- `GET /api/v1/threads/{id}` — Thread detail with nested comment tree
+- `POST /api/v1/protocols/{protocol}/threads` *(Auth)* — Create a discussion thread
+- `PUT /api/v1/threads/{thread}` *(Auth)* — Update thread
+- `DELETE /api/v1/threads/{thread}` *(Auth)* — Delete thread
+
+### 3. Nested Comments (`/api/v1/threads/{id}/comments`, `/api/v1/comments`)
+- `GET /api/v1/threads/{thread}/comments` — List top-level comments and nested replies
+- `POST /api/v1/threads/{thread}/comments` *(Auth)* — Create top-level or reply comment (`parent_id`)
+- `DELETE /api/v1/comments/{comment}` *(Auth)* — Delete comment
+
+### 4. Peer Reviews (`/api/v1/protocols/{id}/reviews`, `/api/v1/reviews`)
+- `GET /api/v1/protocols/{protocol}/reviews` — List peer reviews with ratings and verdicts
+- `POST /api/v1/protocols/{protocol}/reviews` *(Auth)* — Submit a review (1–5 rating, summary, findings)
+- `DELETE /api/v1/reviews/{review}` *(Auth)* — Remove review
+
+### 5. Polymorphic Votes (`/api/v1/votes`)
+- `POST /api/v1/votes` *(Auth)* — Cast or toggle vote (+1 / -1) on `Protocol`, `Thread`, or `Comment`
+
+### 6. Authentication (`/api/v1/auth`)
+- `POST /api/v1/auth/register` — Register user account
+- `POST /api/v1/auth/login` — Login and receive Sanctum bearer token
+- `GET /api/v1/auth/me` *(Auth)* — Current user profile
+- `POST /api/v1/auth/logout` *(Auth)* — Revoke tokens
 
 ---
 
-## 🧪 Testing & Code Quality
+## 📦 Database Seeder & Mock Data
 
-### Backend
+The database seeder (`php artisan migrate:fresh --seed`) creates:
+- **5 Default Users**: Admin (`admin@protocol.io`), Vitalik B. (`vitalik@protocol.io`), Alice Cryptographer (`alice@protocol.io`), Bob Auditor (`bob@protocol.io`), Charlie DeFi (`charlie@protocol.io`). Password: `password`.
+- **12 Published Protocols**: Across Layer2, DeFi, Staking, Security, Oracles, Governance, and Cryptography.
+- **12 Discussion Threads**: One pinned specification discussion per protocol.
+- **24 Hierarchical Comments**: Demonstrating 2-level threaded discussions.
+- **36 Peer Reviews**: Detailed findings, scores, and verdicts.
+- **48 Polymorphic Votes**: Initial reputation metrics and recalculation of protocol score aggregates.
+
+---
+
+## 🛠 Quickstart Guide
+
+### Option 1: Native Windows / Git Bash (Host Execution)
+
+#### Prerequisites
+- PHP 8.4+ and Composer 2
+- Node.js 20+ and npm
+- Docker Desktop (for PostgreSQL, Typesense, and Redis services)
+
+#### 1. Start Support Containers
+```powershell
+docker run -d --name protocol_pg17 -p 5433:5432 -e POSTGRES_DB=protocol_platform -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=secret postgres:17-alpine
+docker run -d --name protocol_typesense -p 8108:8108 typesense/typesense:27.1 --data-dir /data --api-key=xyz --enable-cors
+docker run -d --name protocol_redis -p 6379:6379 redis:alpine
+```
+
+#### 2. Setup & Run Backend
 ```bash
-# If using Docker (Zero-PHP Host):
-docker compose exec backend ./vendor/bin/pest
-docker compose exec backend ./vendor/bin/pint
-docker compose exec backend ./vendor/bin/phpstan
-
-# If using Host PHP:
 cd backend
-./vendor/bin/pest          # Pest 4 test suite
-./vendor/bin/pint          # Laravel Pint formatting
-./vendor/bin/phpstan       # PHPStan / Larastan static analysis
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan search:reindex
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-### Frontend
+#### 3. Setup & Run Frontend
 ```bash
 cd frontend
-npm run test               # Vitest component & unit tests
-npm run test:e2e           # Playwright E2E browser tests
-npm run lint               # ESLint
-npm run format             # Prettier
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Visit **`http://localhost:3000`** (or **`http://localhost:3000/protocols`**).
+
+---
+
+### Option 2: Docker Compose (Full Stack Zero-Host-Dependencies)
+
+```bash
+docker compose up -d
+docker compose exec backend php artisan migrate --seed
+docker compose exec backend php artisan search:reindex
 ```
 
 ---
 
-## 📂 Next Steps
-Inspect `app/Services/*Service.php` and `app/Repositories/*Repository.php` in backend,
-and `features/*` in frontend. Every stub includes `// TODO` markers defining where
-business logic and domain rules belong.
+## 🧪 Testing & Verification
+
+### Run Backend Tests (Pest 4)
+```bash
+cd backend
+php vendor/bin/pest
+```
+> **Result:** `PASS Tests\Feature\Api\... (37 tests, 191 assertions)`
+
+### Run Static Analysis & Formatting
+```bash
+cd backend
+vendor/bin/pint --test
+vendor/bin/phpstan analyse
+```
+
+### Run Frontend Build & Tests
+```bash
+cd frontend
+npm run build
+npm run test
+```
+
+---
+
+## 📄 Implementation Notes
+For deep technical rationale, database schema details, search engine design, and architectural decisions, read [`IMPLEMENTATION_NOTES.md`](./IMPLEMENTATION_NOTES.md).

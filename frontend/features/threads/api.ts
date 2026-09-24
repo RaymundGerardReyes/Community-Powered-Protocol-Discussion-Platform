@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import type { PaginatedResponse, Thread } from '@/types';
+import type { Thread } from '@/types';
 
 export async function fetchThread(id: number | string): Promise<Thread> {
   const { data } = await apiClient.get<{ data: Thread }>(

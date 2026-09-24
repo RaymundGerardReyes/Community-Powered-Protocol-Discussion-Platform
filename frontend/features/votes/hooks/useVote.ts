@@ -4,7 +4,7 @@ import { castVote } from '../api';
 import type { VoteResponse } from '@/types';
 
 interface VotePayload {
-  votable_type: 'App\\Models\\Thread' | 'App\\Models\\Comment';
+  votable_type: 'App\\Models\\Protocol' | 'App\\Models\\Thread' | 'App\\Models\\Comment';
   votable_id: number;
   value: 1 | -1;
   /** Query key to optimistically update, e.g. ['thread', 5] */

@@ -81,7 +81,7 @@ class Thread extends Model
             'is_pinned' => (bool) $this->is_pinned,
             'votes_count' => (int) $this->votes_count,
             'replies_count' => (int) $this->replies_count,
-            'created_at' => $this->created_at?->timestamp ?? time(),
+            'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
     }
 }

@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Protocol;
+use App\Models\Thread;
+
 return [
 
     /*
@@ -195,7 +198,7 @@ return [
         ],
         // 'max_total_results' => env('TYPESENSE_MAX_TOTAL_RESULTS', 1000),
         'model-settings' => [
-            \App\Models\Protocol::class => [
+            Protocol::class => [
                 'collection-schema' => [
                     'fields' => [
                         ['name' => 'id', 'type' => 'string'],
@@ -214,7 +217,7 @@ return [
                     'query_by' => 'title,description',
                 ],
             ],
-            \App\Models\Thread::class => [
+            Thread::class => [
                 'collection-schema' => [
                     'fields' => [
                         ['name' => 'id', 'type' => 'string'],
