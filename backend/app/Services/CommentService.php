@@ -23,7 +23,7 @@ class CommentService
             // Verify parent comment belongs to the same thread if specified
             if (! empty($data['parent_id'])) {
                 $parent = Comment::find($data['parent_id']);
-                if (! $parent || $parent->thread_id !== $thread->id) {
+                if (! ($parent instanceof Comment) || $parent->thread_id !== $thread->id) {
                     throw ValidationException::withMessages([
                         'parent_id' => ['The specified parent comment does not belong to this thread.'],
                     ]);

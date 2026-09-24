@@ -47,7 +47,7 @@ class VoteService
             ]);
         }
 
-        /** @var Model $votable */
+        /** @var Protocol|Thread|Comment|null $votable */
         $votable = $resolvedClass::find($id);
 
         if (! $votable) {
