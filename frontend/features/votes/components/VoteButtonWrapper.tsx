@@ -2,7 +2,7 @@
 import { VoteButton } from './VoteButton';
 
 interface Props {
-  votableType: 'App\\Models\\Thread' | 'App\\Models\\Comment';
+  votableType: string;
   votableId: number;
   count: number;
   queryKey?: unknown[];

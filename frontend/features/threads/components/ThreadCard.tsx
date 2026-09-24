@@ -10,7 +10,7 @@ export function ThreadCard({ thread }: { thread: Thread }) {
       {/* Vote column */}
       <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
         <VoteButtonWrapper
-          votableType="App\Models\Thread"
+          votableType="App\\Models\\Thread"
           votableId={thread.id}
           count={thread.votes_count}
           queryKey={['thread', thread.id]}
