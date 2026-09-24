@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ProtocolController;
+use App\Http\Controllers\Api\V1\ThreadController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,9 +30,23 @@ Route::prefix('auth')->group(function () {
 Route::get('/protocols', [ProtocolController::class, 'index']);
 Route::get('/protocols/{slug}', [ProtocolController::class, 'show']);
 
-// Protocol authenticated endpoints
+// Thread public endpoints
+Route::get('/protocols/{protocol}/threads', [ThreadController::class, 'index']);
+Route::get('/threads/{id}', [ThreadController::class, 'show']);
+
+// Authenticated mutations
 Route::middleware('auth:sanctum')->group(function () {
+    // Protocols
     Route::post('/protocols', [ProtocolController::class, 'store']);
     Route::put('/protocols/{protocol}', [ProtocolController::class, 'update']);
     Route::delete('/protocols/{protocol}', [ProtocolController::class, 'destroy']);
+
+    // Threads
+    Route::post('/protocols/{protocol}/threads', [ThreadController::class, 'store']);
+    Route::put('/threads/{thread}', [ThreadController::class, 'update']);
+    Route::delete('/threads/{thread}', [ThreadController::class, 'destroy']);
+
+    // Comments
+    Route::post('/threads/{thread}/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
 });

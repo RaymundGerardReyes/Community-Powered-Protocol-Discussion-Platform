@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Repositories\Contracts\ProtocolRepositoryInterface;
+use App\Repositories\Contracts\ThreadRepositoryInterface;
 use App\Repositories\Eloquent\ProtocolRepository;
+use App\Repositories\Eloquent\ThreadRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -16,6 +18,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             ProtocolRepositoryInterface::class,
             ProtocolRepository::class
+        );
+
+        $this->app->bind(
+            ThreadRepositoryInterface::class,
+            ThreadRepository::class
         );
     }
 

@@ -3,47 +3,41 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCommentRequest;
+use App\Http\Resources\CommentResource;
+use App\Models\Comment;
+use App\Models\Thread;
+use App\Services\CommentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
+    public function __construct(
+        protected CommentService $service
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * Store a newly created comment or nested reply on a thread.
      */
-    public function index()
+    public function store(StoreCommentRequest $request, Thread $thread): JsonResponse
     {
-        //
+        $comment = $this->service->create($request->user(), $thread, $request->validated());
+
+        return (new CommentResource($comment->load('user')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Remove the specified comment.
      */
-    public function store(Request $request)
+    public function destroy(Request $request, Comment $comment): JsonResponse
     {
-        //
-    }
+        $this->service->delete($comment, $request->user());
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'message' => 'Comment deleted successfully',
+        ]);
     }
 }
