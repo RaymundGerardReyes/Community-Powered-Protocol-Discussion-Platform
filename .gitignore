@@ -4,6 +4,8 @@
 _agents/
 _agent/
 *.rules.md
+GEMINI.md
+AGENTS.md
 
 # PHP / Composer
 /backend/vendor/
