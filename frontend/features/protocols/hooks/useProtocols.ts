@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchProtocols } from "../api";
+import { useQuery } from '@tanstack/react-query';
+import { fetchProtocols, type ProtocolFilters } from '../api';
 
-export function useProtocols(filters?: Record<string, string>) {
+export function useProtocols(filters?: ProtocolFilters) {
   return useQuery({
-    queryKey: ["protocols", filters],
+    queryKey: ['protocols', filters],
     queryFn: () => fetchProtocols(filters),
+    placeholderData: (prev) => prev, // keep previous data while fetching
   });
 }
