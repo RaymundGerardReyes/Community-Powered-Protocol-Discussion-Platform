@@ -48,7 +48,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
     >
       <div
         className="rounded-lg p-3 transition-colors"
-        style={{ background: 'rgba(30, 41, 59, 0.4)' }}
+        style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}
       >
         {/* Header: Author + Timestamp + Collapse */}
         <div className="flex items-center justify-between gap-2 text-xs">
@@ -110,7 +110,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
               {depth < MAX_VISUAL_DEPTH && (
                 <button
                   onClick={() => setIsReplying((r) => !r)}
-                  className="flex items-center gap-1 font-medium transition-colors hover:text-white"
+                  className="flex items-center gap-1 font-medium transition-colors hover:text-indigo-600"
                   style={{ color: isReplying ? 'var(--brand)' : 'var(--text-muted)' }}
                 >
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

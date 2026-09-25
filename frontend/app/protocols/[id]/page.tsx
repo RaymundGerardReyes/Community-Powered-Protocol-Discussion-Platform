@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger'> = {
   published: 'success',
-  draft: 'warning',
-  deprecated: 'danger',
+  draft:     'warning',
+  deprecated:'danger',
 };
 
 export default async function ProtocolDetailPage({ params }: PageProps) {
@@ -50,33 +50,83 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
   const reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value.data : [];
 
   return (
-    <div className='mx-auto max-w-4xl px-4 py-8'>
-      {/* Protocol Header */}
-      <div className='mb-8'>
-        <div className='flex flex-wrap items-start gap-3'>
+    <div className='mx-auto max-w-4xl px-4 py-10'>
+      {/* ── Protocol Header Card ─────────────────────────────────────── */}
+      <div
+        className='card-flat p-6 mb-8'
+        style={{ background: 'var(--surface-card)' }}
+      >
+        {/* Chips row */}
+        <div className='flex flex-wrap items-center gap-2 mb-4'>
           <Badge variant={STATUS_VARIANT[protocol.status] ?? 'default'}>
             {protocol.status}
           </Badge>
-          <span className='rounded bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-600'>
+          <span
+            className='rounded px-2 py-0.5 text-xs font-mono font-medium'
+            style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
+          >
             {protocol.category}
           </span>
-          <span className='rounded bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-600'>
+          <span
+            className='rounded px-2 py-0.5 text-xs font-mono'
+            style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)' }}
+          >
             v{protocol.version}
           </span>
         </div>
-        <h1 className='mt-3 text-3xl font-bold text-slate-900'>{protocol.title}</h1>
-        <div className='mt-2 flex items-center gap-4 text-sm text-slate-500'>
-          <span>By <span className='font-medium text-slate-700'>{protocol.author.name}</span></span>
+
+        {/* Title */}
+        <h1
+          className='text-2xl font-bold tracking-tight leading-snug'
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {protocol.title}
+        </h1>
+
+        {/* Author + stats row */}
+        <div
+          className='mt-3 flex flex-wrap items-center gap-4 text-sm'
+          style={{ color: 'var(--text-muted)' }}
+        >
+          <span>
+            By{' '}
+            <span className='font-medium' style={{ color: 'var(--text-secondary)' }}>
+              {protocol.author.name}
+            </span>
+          </span>
           <RatingStars rating={protocol.average_rating} />
           <span>{protocol.reviews_count} reviews</span>
-          <span>▲ {protocol.votes_count} votes</span>
+          <span
+            className='font-semibold flex items-center gap-1'
+            style={{ color: 'var(--brand)' }}
+          >
+            ▲ {protocol.votes_count} votes
+          </span>
         </div>
-        <p className='mt-4 text-slate-700 leading-relaxed'>{protocol.description}</p>
+
+        {/* Divider */}
+        <div className='divider my-5' />
+
+        {/* Description */}
+        <p
+          className='text-sm leading-relaxed'
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {protocol.description}
+        </p>
       </div>
 
-      {/* Threads */}
+      {/* ── Discussion Threads ───────────────────────────────────────── */}
       <section className='mb-10'>
-        <h2 className='mb-4 text-lg font-semibold text-slate-900'>Discussion Threads</h2>
+        <h2 className='section-title mb-4'>
+          Discussion Threads
+          <span
+            className='badge badge-info ml-2'
+            style={{ borderRadius: '999px', verticalAlign: 'middle' }}
+          >
+            {threads.length}
+          </span>
+        </h2>
         <Suspense fallback={<Spinner />}>
           {threads.length > 0 ? (
             <ul className='space-y-3'>
@@ -85,20 +135,34 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
               ))}
             </ul>
           ) : (
-            <p className='text-sm text-slate-500 italic'>No threads yet.</p>
+            <div
+              className='rounded-xl p-8 text-center text-sm italic'
+              style={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              No discussion threads yet.
+            </div>
           )}
         </Suspense>
       </section>
 
-      {/* Reviews */}
+      {/* ── Peer Reviews ─────────────────────────────────────────────── */}
       <section>
-        <h2 className='mb-4 text-lg font-semibold text-slate-900'>
+        <h2 className='section-title mb-4'>
           Peer Reviews
-          <span className='ml-2 text-sm font-normal text-slate-500'>
-            ({protocol.reviews_count})
+          <span
+            className='badge badge-neutral ml-2'
+            style={{ borderRadius: '999px', verticalAlign: 'middle' }}
+          >
+            {protocol.reviews_count}
           </span>
         </h2>
-        <ReviewList reviews={reviews} />
+        <div className='card-flat p-5'>
+          <ReviewList reviews={reviews} />
+        </div>
       </section>
     </div>
   );

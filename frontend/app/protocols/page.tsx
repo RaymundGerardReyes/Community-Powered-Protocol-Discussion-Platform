@@ -17,15 +17,25 @@ interface PageProps {
 export default async function ProtocolsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
-    <div className='mx-auto max-w-6xl px-4 py-8'>
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-slate-900'>Protocols</h1>
-        <p className='mt-1 text-sm text-slate-500'>
-          Discover and discuss community-powered protocol standards.
+    <div className='mx-auto max-w-6xl px-4 py-10'>
+      {/* Page hero */}
+      <div className='mb-8'>
+        <h1
+          className='text-3xl font-bold tracking-tight'
+          style={{ color: 'var(--text-primary)' }}
+        >
+          Protocols
+        </h1>
+        <p className='mt-2 text-sm' style={{ color: 'var(--text-secondary)' }}>
+          Discover, discuss, and vote on community-powered Web3 protocol standards.
         </p>
       </div>
 
-      <div className='mb-5 flex flex-col gap-3 sm:flex-row sm:items-center'>
+      {/* Filters row */}
+      <div
+        className='mb-6 flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center'
+        style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
+      >
         <Suspense>
           <SearchBar />
         </Suspense>
@@ -34,6 +44,7 @@ export default async function ProtocolsPage({ searchParams }: PageProps) {
         </Suspense>
       </div>
 
+      {/* List */}
       <Suspense fallback={<div className='flex justify-center py-20'><Spinner className='h-8 w-8' /></div>}>
         <ProtocolListClient initialParams={params} />
       </Suspense>

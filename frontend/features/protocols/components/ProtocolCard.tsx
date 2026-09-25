@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { RatingStars } from '@/components/ui/RatingStars';
-import { cn } from '@/lib/cn';
 import type { Protocol } from '@/types';
 
 const STATUS_VARIANT: Record<Protocol['status'], 'success' | 'warning' | 'danger'> = {
@@ -12,43 +11,67 @@ const STATUS_VARIANT: Record<Protocol['status'], 'success' | 'warning' | 'danger
 
 export function ProtocolCard({ protocol }: { protocol: Protocol }) {
   return (
-    <article className={cn('rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow')}>
-      <div className='flex items-start justify-between gap-3'>
-        <Link
-          href={`/protocols/${protocol.slug}`}
-          className='group flex-1 min-w-0'
-        >
-          <h3 className='text-base font-semibold text-slate-900 group-hover:text-indigo-600 truncate transition-colors'>
-            {protocol.title}
-          </h3>
-        </Link>
-        <Badge variant={STATUS_VARIANT[protocol.status]}>
-          {protocol.status}
-        </Badge>
+    <article
+      className='card-flat flex flex-col h-full p-5 transition-all hover:-translate-y-0.5'
+      style={{ cursor: 'pointer' }}
+    >
+      {/* Header row */}
+      <div className='flex items-start justify-between gap-3 mb-3'>
+        <div className='flex flex-wrap items-center gap-1.5 min-w-0'>
+          <Badge variant={STATUS_VARIANT[protocol.status]}>{protocol.status}</Badge>
+          <span
+            className='rounded px-2 py-0.5 text-[0.68rem] font-mono font-medium'
+            style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}
+          >
+            {protocol.category}
+          </span>
+          <span
+            className='rounded px-2 py-0.5 text-[0.68rem] font-mono'
+            style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)' }}
+          >
+            v{protocol.version}
+          </span>
+        </div>
       </div>
 
-      <p className='mt-2 text-sm text-slate-600 line-clamp-2'>
+      {/* Title */}
+      <Link href={`/protocols/${protocol.slug}`} className='group flex-1 min-w-0 block'>
+        <h3
+          className='text-sm font-semibold leading-snug line-clamp-2 transition-colors group-hover:underline'
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {protocol.title}
+        </h3>
+      </Link>
+
+      {/* Description */}
+      <p
+        className='mt-2 text-xs leading-relaxed line-clamp-2'
+        style={{ color: 'var(--text-secondary)' }}
+      >
         {protocol.description}
       </p>
 
-      <div className='mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500'>
-        <span className='bg-slate-100 rounded px-2 py-0.5 font-mono'>
-          {protocol.category}
-        </span>
-        <span className='bg-slate-100 rounded px-2 py-0.5 font-mono'>
-          v{protocol.version}
-        </span>
-      </div>
-
-      <div className='mt-4 flex items-center justify-between text-xs text-slate-500'>
+      {/* Footer */}
+      <div
+        className='mt-4 pt-3 flex items-center justify-between text-xs'
+        style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}
+      >
         <span>
           By{' '}
-          <span className='font-medium text-slate-700'>{protocol.author.name}</span>
+          <span className='font-medium' style={{ color: 'var(--text-secondary)' }}>
+            {protocol.author.name}
+          </span>
         </span>
         <div className='flex items-center gap-3'>
           <RatingStars rating={protocol.average_rating} size='sm' />
           <span>{protocol.reviews_count} reviews</span>
-          <span>▲ {protocol.votes_count}</span>
+          <span
+            className='flex items-center gap-0.5 font-semibold'
+            style={{ color: 'var(--brand)' }}
+          >
+            ▲ {protocol.votes_count}
+          </span>
         </div>
       </div>
     </article>

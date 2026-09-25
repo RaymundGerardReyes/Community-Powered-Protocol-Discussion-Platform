@@ -21,26 +21,64 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en' className={`${geist.variable} h-full antialiased`}>
-      <body className='min-h-full flex flex-col bg-slate-50'>
+      <body className='min-h-full flex flex-col' style={{ background: 'var(--background)' }}>
         <Providers>
-          <header className='sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-sm'>
-            <div className='mx-auto flex max-w-6xl items-center justify-between px-4 py-3'>
+          {/* ── Header ──────────────────────────────────────────────────── */}
+          <header
+            className='sticky top-0 z-30 backdrop-blur-md'
+            style={{
+              background: 'rgba(255,255,255,0.85)',
+              borderBottom: '1px solid var(--border)',
+              boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.06)',
+            }}
+          >
+            <div className='mx-auto flex max-w-6xl items-center justify-between px-4 py-3 gap-4'>
+              {/* Logo */}
               <Link
-                href='/'
-                className='font-semibold text-slate-900 hover:text-indigo-600 transition-colors'
+                href='/protocols'
+                className='flex items-center gap-2 font-bold text-base tracking-tight transition-colors'
+                style={{ color: 'var(--text-primary)' }}
               >
+                <span
+                  className='inline-flex h-7 w-7 items-center justify-center rounded-lg text-white text-xs font-bold'
+                  style={{ background: 'var(--brand)' }}
+                >
+                  P
+                </span>
                 Protocol Hub
               </Link>
-              <nav className='flex items-center gap-6 text-sm text-slate-600'>
-                <Link href='/protocols' className='hover:text-indigo-600 transition-colors'>
+
+              {/* Nav */}
+              <nav className='flex items-center gap-1' aria-label='Primary navigation'>
+              <Link
+                  href='/protocols'
+                  className='rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-indigo-50 hover:text-indigo-600'
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Protocols
                 </Link>
               </nav>
             </div>
           </header>
+
+          {/* ── Main ────────────────────────────────────────────────────── */}
           <main className='flex-1'>{children}</main>
-          <footer className='border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400'>
-            Community-Powered Protocol Discussion Platform
+
+          {/* ── Footer ──────────────────────────────────────────────────── */}
+          <footer
+            className='py-8 text-center text-xs'
+            style={{
+              borderTop: '1px solid var(--border)',
+              background: 'var(--surface-card)',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <div className='mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-2'>
+              <span className='font-medium' style={{ color: 'var(--text-secondary)' }}>
+                Protocol Hub
+              </span>
+              <span>Community-Powered Protocol Discussion Platform</span>
+            </div>
           </footer>
         </Providers>
       </body>

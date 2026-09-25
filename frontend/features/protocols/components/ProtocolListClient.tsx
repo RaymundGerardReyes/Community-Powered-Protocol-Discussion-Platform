@@ -9,11 +9,11 @@ export function ProtocolListClient({ initialParams }: { initialParams: Record<st
   const searchParams = useSearchParams();
 
   const filters: ProtocolFilters = {
-    sort: (searchParams.get('sort') ?? initialParams.sort ?? 'latest') as ProtocolFilters['sort'],
-    category: searchParams.get('category') ?? initialParams.category ?? '',
-    status: searchParams.get('status') ?? initialParams.status ?? '',
-    search: searchParams.get('search') ?? initialParams.search ?? '',
-    page: searchParams.get('page') ?? initialParams.page ?? '1',
+    sort:     (searchParams.get('sort')     ?? initialParams.sort     ?? 'latest') as ProtocolFilters['sort'],
+    category:  searchParams.get('category') ?? initialParams.category ?? '',
+    status:    searchParams.get('status')   ?? initialParams.status   ?? '',
+    search:    searchParams.get('search')   ?? initialParams.search   ?? '',
+    page:      searchParams.get('page')     ?? initialParams.page     ?? '1',
   };
 
   // Remove empty strings so API doesn't receive ?status=
@@ -29,24 +29,47 @@ export function ProtocolListClient({ initialParams }: { initialParams: Record<st
 
   if (isError) {
     return (
-      <div className='rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700'>
+      <div
+        className='rounded-xl p-5 text-sm'
+        style={{
+          background: 'var(--danger-bg)',
+          border: '1px solid rgba(185, 28, 28, 0.2)',
+          color: 'var(--danger-text)',
+        }}
+      >
         {(error as { message?: string })?.message ?? 'Failed to load protocols.'}
       </div>
     );
   }
 
   const protocols = data?.data ?? [];
-  const meta = data?.meta;
+  const meta      = data?.meta;
 
   if (!protocols.length) {
-    return <p className='py-12 text-center text-slate-500'>No protocols found matching your filters.</p>;
+    return (
+      <div
+        className='rounded-xl p-12 text-center text-sm italic'
+        style={{
+          background: 'var(--surface-card)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-muted)',
+        }}
+      >
+        No protocols found matching your filters.
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className='mb-3 text-sm text-slate-500'>
-        {meta?.total ? `${meta.total} protocols` : ''}
-      </div>
+      {/* Result count */}
+      {meta?.total ? (
+        <p className='mb-4 text-xs' style={{ color: 'var(--text-muted)' }}>
+          {meta.total} protocol{meta.total !== 1 ? 's' : ''}
+        </p>
+      ) : null}
+
+      {/* Grid */}
       <ul className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
         {protocols.map((protocol) => (
           <li key={protocol.id}>
@@ -54,23 +77,36 @@ export function ProtocolListClient({ initialParams }: { initialParams: Record<st
           </li>
         ))}
       </ul>
+
       {/* Pagination */}
       {meta && meta.last_page > 1 && (
-        <div className='mt-8 flex justify-center gap-2 text-sm'>
-          {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((page) => (
-            <a
-              key={page}
-              href={`?${new URLSearchParams({ ...cleanFilters, page: String(page) }).toString()}`}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors ${
-                page === meta.current_page
-                  ? 'border-indigo-600 bg-indigo-600 text-white'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {page}
-            </a>
-          ))}
-        </div>
+        <nav
+          className='mt-8 flex justify-center gap-1.5 text-sm'
+          aria-label='Pagination'
+        >
+          {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((page) => {
+            const isActive = page === meta.current_page;
+            return (
+              <a
+                key={page}
+                href={`?${new URLSearchParams({ ...cleanFilters, page: String(page) }).toString()}`}
+                className='inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-all'
+                style={
+                  isActive
+                    ? { background: 'var(--brand)', color: '#fff', border: '1px solid var(--brand)' }
+                    : {
+                        background: 'var(--surface-card)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border)',
+                      }
+                }
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {page}
+              </a>
+            );
+          })}
+        </nav>
       )}
     </div>
   );

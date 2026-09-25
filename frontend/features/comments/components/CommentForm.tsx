@@ -44,8 +44,8 @@ export function CommentForm({ threadId, parentId, onSuccess, onCancel }: Comment
           rows={parentId ? 2 : 3}
           className="input resize-none w-full text-sm leading-relaxed"
           style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            borderColor: 'var(--surface-overlay)',
+            background: 'var(--surface-card)',
+            borderColor: 'var(--border)',
             color: 'var(--text-primary)',
           }}
           required
