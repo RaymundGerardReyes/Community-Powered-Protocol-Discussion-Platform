@@ -58,3 +58,12 @@
   `badge`, `badge-published`, `badge-draft`, `badge-deprecated`, `badge-info`, `badge-neutral`,
   `input`, `section-title`, `star-filled`, `star-empty`, `comment-indent`, `divider`.
 
+---
+
+## 7. Dual-Mode Environment Portability (Zero-Docker Fallback)
+- The project supports two execution modes:
+  1. **Containerized Mode** (Docker Desktop running): Uses `protocol_pg17` (port 5433), `protocol_redis` (port 6379), and `protocol_typesense` (port 8108).
+  2. **Standalone Host Mode** (No Docker required): Uses native SQLite (`database/database.sqlite`), `CACHE_STORE=file`, `SESSION_DRIVER=file`, `QUEUE_CONNECTION=sync`, and `SCOUT_DRIVER=null`.
+- The repository's `database/database.sqlite` is already seeded with the required full dataset (12 protocols, 12 threads, 24 comments, 36 reviews, 48 votes).
+- Never overwrite a functioning standalone `.env` with container port configurations (`5433`, `6379`) unless verifying that the Docker daemon and containers are actually active.
+- When Docker is stopped, automatically fall back to or recommend the zero-dependency SQLite configuration to ensure immediate, uninterrupted local execution.
