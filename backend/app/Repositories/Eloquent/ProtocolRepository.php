@@ -47,9 +47,13 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
     public function findBySlugOrFail(string $slug): Protocol
     {
-        return Protocol::where('slug', $slug)
-            ->with(['user', 'threads.user', 'reviews.user'])
-            ->firstOrFail();
+        $query = Protocol::query()->with(['user', 'threads.user', 'reviews.user']);
+
+        if (is_numeric($slug)) {
+            return $query->where('id', (int) $slug)->orWhere('slug', $slug)->firstOrFail();
+        }
+
+        return $query->where('slug', $slug)->firstOrFail();
     }
 
     public function getTopVoted(int $limit = 10): Collection
