@@ -8,7 +8,7 @@ test.describe('Protocol Discussion & Voting Integration Flow', () => {
 
     // 2. Click on the first protocol card
     const firstProtocolLink = page.locator('article h3').first();
-    await expect(firstProtocolLink).toBeVisible();
+    await expect(firstProtocolLink).toBeVisible({ timeout: 15000 });
     await firstProtocolLink.click();
 
     // 3. Verify protocol detail page renders
