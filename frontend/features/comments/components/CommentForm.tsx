@@ -1,8 +1,10 @@
 'use client';
+
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createComment } from '../api';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/features/auth/AuthContext';
 
 interface CommentFormProps {
   threadId: number;
@@ -12,6 +14,7 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ threadId, parentId, onSuccess, onCancel }: CommentFormProps) {
+  const { user, openAuthModal } = useAuth();
   const [body, setBody] = useState('');
   const queryClient = useQueryClient();
 
@@ -24,6 +27,31 @@ export function CommentForm({ threadId, parentId, onSuccess, onCancel }: Comment
     },
   });
 
+  if (!user) {
+    return (
+      <div
+        className="rounded-lg p-4 text-center space-y-2"
+        style={{
+          background: 'var(--surface-muted)',
+          border: '1px dashed var(--border)',
+        }}
+      >
+        <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+          You must be signed in to join this protocol discussion.
+        </p>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={openAuthModal}
+          className="text-xs"
+        >
+          Sign In / Demo Accounts
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={(e) => {
@@ -32,6 +60,12 @@ export function CommentForm({ threadId, parentId, onSuccess, onCancel }: Comment
       }}
       className="space-y-3"
     >
+      <div className="flex items-center justify-between text-[0.72rem]" style={{ color: 'var(--text-muted)' }}>
+        <span>
+          Posting as <strong style={{ color: 'var(--text-primary)' }}>{user.name}</strong>
+        </span>
+      </div>
+
       <label htmlFor={`comment-${threadId}-${parentId ?? 'root'}`} className="sr-only">
         {parentId ? 'Write a reply' : 'Write a comment'}
       </label>
@@ -56,9 +90,9 @@ export function CommentForm({ threadId, parentId, onSuccess, onCancel }: Comment
         <div
           className="rounded-lg p-2.5 text-xs"
           style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.25)',
-            color: '#f87171',
+            background: 'var(--danger-bg)',
+            border: '1px solid #fecaca',
+            color: 'var(--danger-text)',
           }}
           role="alert"
         >

@@ -1,10 +1,10 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { castVote } from '../api';
+import { castVote, type VotableType } from '../api';
 import type { VoteResponse } from '@/types';
 
 interface VotePayload {
-  votable_type: 'App\\Models\\Protocol' | 'App\\Models\\Thread' | 'App\\Models\\Comment';
+  votable_type: VotableType;
   votable_id: number;
   value: 1 | -1;
   /** Query key to optimistically update, e.g. ['thread', 5] */

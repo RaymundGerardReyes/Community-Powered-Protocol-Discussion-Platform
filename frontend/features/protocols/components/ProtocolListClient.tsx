@@ -33,7 +33,7 @@ export function ProtocolListClient({ initialParams }: { initialParams: Record<st
         className='rounded-xl p-5 text-sm'
         style={{
           background: 'var(--danger-bg)',
-          border: '1px solid rgba(185, 28, 28, 0.2)',
+          border: '1px solid #fecaca',
           color: 'var(--danger-text)',
         }}
       >

@@ -95,7 +95,7 @@ export default async function ThreadDetailPage({ params }: PageProps) {
           {/* Vote column — horizontal on mobile, vertical on sm+ */}
           <div className='flex sm:flex-col items-center gap-2 sm:gap-0.5 shrink-0'>
             <VoteButtonWrapper
-              votableType='App\Models\Thread'
+              votableType='thread'
               votableId={thread.id}
               count={thread.votes_count}
               queryKey={['thread', thread.id]}

@@ -73,7 +73,7 @@ export interface Vote {
 
 export interface VoteResponse {
   action: 'created' | 'updated' | 'removed';
-  current_vote: Vote | null;
+  current_vote: number | Vote | null;
   votes_count: number;
 }
 

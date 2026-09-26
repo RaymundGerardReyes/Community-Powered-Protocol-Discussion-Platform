@@ -63,15 +63,15 @@ export function ProtocolFilterBar() {
             key={opt.value}
             onClick={() => updateParam('sort', opt.value)}
             className={cn(
-              'rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+              'rounded-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
               current.sort === opt.value
                 ? 'shadow-sm text-white'
-                : 'text-slate-600 hover:bg-white',
+                : 'hover:bg-white',
             )}
             style={
               current.sort === opt.value
-                ? { background: 'var(--brand)', color: '#fff' }
-                : {}
+                ? { background: 'var(--brand)', color: '#ffffff' }
+                : { color: 'var(--text-secondary)' }
             }
           >
             {opt.label}

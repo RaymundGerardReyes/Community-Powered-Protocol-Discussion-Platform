@@ -1,8 +1,10 @@
 'use client';
+
 import { VoteButton } from './VoteButton';
+import type { VotableType } from '../api';
 
 interface Props {
-  votableType: 'App\\Models\\Thread' | 'App\\Models\\Comment' | 'App\\Models\\Protocol' | string;
+  votableType: VotableType;
   votableId: number;
   count: number;
   queryKey?: unknown[];
