@@ -22,9 +22,17 @@
 
 ---
 
-## 3. Service Dependency Liveness (Redis & Databases)
-- When Laravel's `.env` specifies `SESSION_DRIVER=redis` or `CACHE_STORE=redis`, an offline Redis port causes synchronous TCP connection timeouts (5–10s latency) on every incoming HTTP request.
-- Ensure the Redis container (`protocol_redis` on port 6379) is active before serving API requests.
+## 3. Local Environment Simplicity & Service Dependencies
+- **No Redis Requirement for Local Development:**
+  - Redis is only meant for high-scale production clustering. In local development environments, Redis is unnecessary and adds fragile container/TCP timeout overhead (`Predis\TimeoutException`).
+  - Configure `backend/.env` with Laravel's built-in local drivers:
+    ```env
+    CACHE_STORE=file
+    QUEUE_CONNECTION=sync
+    SESSION_DRIVER=file
+    ```
+  - This eliminates background Redis connection timeouts, unburdens developer machines, and allows all tests, caching, and sessions to run instantly with zero dependencies.
+- **Database Dependency:** Ensure the PostgreSQL 17 container (`protocol_pg17` on port 5433) is active for database operations.
 
 ---
 
@@ -72,3 +80,16 @@
   ```
 - **Service Dependency:** Port 5433 connects to the PostgreSQL container `protocol_pg17`. Ensure this container is running alongside `protocol_redis` (port 6379) and `protocol_typesense` (port 8108).
 - **Strict Invariant:** Do not switch `backend/.env` away from PostgreSQL.
+
+---
+
+## 8. RESTful Resource Invariants & Schema Parity
+- **Nested Resource Route Structure:**
+  - Comments must always be posted through their parent resource: `POST /api/v1/threads/{thread}/comments`.
+  - Never call root-level `POST /api/v1/comments`.
+- **Field Name Parity (`content` vs `body`):**
+  - Database schema and Eloquent resources use `content` for discussions and comments.
+  - Frontend interfaces and API payloads must send `content: string` (optionally retaining `body` as an alias for backwards compatibility).
+- **Polymorphic Votable Type Shorthands:**
+  - When dispatching votes via `POST /api/v1/votes`, always send canonical shorthand identifiers: `'protocol'`, `'thread'`, or `'comment'`.
+  - Avoid raw PHP FQCN string literals (e.g. `'App\Models\Thread'`) in client code, which suffer from backslash escape stripping in JavaScript.
