@@ -1,14 +1,21 @@
 import { apiClient } from '@/lib/api-client';
 import type { Comment } from '@/types';
 
-export async function createComment(payload: {
+export interface CreateCommentPayload {
   thread_id: number;
-  body: string;
+  content?: string;
+  body?: string;
   parent_id?: number | null;
-}): Promise<Comment> {
+}
+
+export async function createComment(payload: CreateCommentPayload): Promise<Comment> {
+  const content = payload.content ?? payload.body ?? '';
   const { data } = await apiClient.post<{ data: Comment }>(
-    '/api/v1/comments',
-    payload,
+    `/api/v1/threads/${payload.thread_id}/comments`,
+    {
+      content,
+      parent_id: payload.parent_id,
+    },
   );
   return data.data;
 }

@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const thread = await fetchThread(id);
     return {
       title: `${thread.title} | Protocol Hub`,
-      description: thread.body.slice(0, 160),
+      description: (thread.content ?? thread.body ?? '').slice(0, 160),
     };
   } catch {
     return { title: 'Thread | Protocol Hub' };
@@ -154,7 +154,7 @@ export default async function ThreadDetailPage({ params }: PageProps) {
               className='text-sm leading-relaxed whitespace-pre-wrap'
               style={{ color: 'var(--text-secondary)' }}
             >
-              {thread.body}
+              {thread.content ?? thread.body}
             </div>
           </div>
         </div>

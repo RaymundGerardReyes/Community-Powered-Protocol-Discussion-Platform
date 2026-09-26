@@ -43,3 +43,4 @@ class Review extends Model
         return $this->morphMany(Vote::class, 'votable');
     }
 }
+

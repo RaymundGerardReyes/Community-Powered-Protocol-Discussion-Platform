@@ -44,7 +44,9 @@ export function NavAuth() {
       setIsMenuOpen(false);
       closeAuthModal();
     } catch (err: unknown) {
-      setLoginError((err as { message?: string })?.message ?? 'Failed to log in');
+      const apiErr = err as { errors?: Record<string, string[]>; message?: string };
+      const fieldError = apiErr?.errors ? Object.values(apiErr.errors).flat()[0] : null;
+      setLoginError(fieldError ?? apiErr?.message ?? 'Failed to log in');
     } finally {
       setSubmitting(false);
     }
@@ -60,7 +62,9 @@ export function NavAuth() {
       setIsMenuOpen(false);
       closeAuthModal();
     } catch (err: unknown) {
-      setLoginError((err as { message?: string })?.message ?? 'Invalid credentials');
+      const apiErr = err as { errors?: Record<string, string[]>; message?: string };
+      const fieldError = apiErr?.errors ? Object.values(apiErr.errors).flat()[0] : null;
+      setLoginError(fieldError ?? apiErr?.message ?? 'Invalid credentials');
     } finally {
       setSubmitting(false);
     }

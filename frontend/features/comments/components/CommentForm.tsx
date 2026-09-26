@@ -19,7 +19,7 @@ export function CommentForm({ threadId, parentId, onSuccess, onCancel }: Comment
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => createComment({ thread_id: threadId, body, parent_id: parentId }),
+    mutationFn: () => createComment({ thread_id: threadId, content: body, body, parent_id: parentId }),
     onSuccess: () => {
       setBody('');
       queryClient.invalidateQueries({ queryKey: ['thread', threadId] });

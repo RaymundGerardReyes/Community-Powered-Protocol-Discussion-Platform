@@ -28,12 +28,12 @@ export function ThreadCard({ thread }: { thread: Thread }) {
           </h3>
         </Link>
 
-        {thread.body && (
+        {(thread.content ?? thread.body) && (
           <p
             className='mt-1 text-xs leading-relaxed line-clamp-2'
             style={{ color: 'var(--text-secondary)' }}
           >
-            {thread.body}
+            {thread.content ?? thread.body}
           </p>
         )}
 

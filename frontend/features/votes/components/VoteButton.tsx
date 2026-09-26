@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import { useVote } from '../hooks/useVote';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -29,6 +29,16 @@ export function VoteButton({
   const { user, openAuthModal } = useAuth();
   const { mutate, isPending } = useVote();
   const [authPrompt, setAuthPrompt] = useState(false);
+  const [activeVote, setActiveVote] = useState<1 | -1 | null>(currentVote);
+  const [displayedCount, setDisplayedCount] = useState(count);
+
+  useEffect(() => {
+    setActiveVote(currentVote);
+  }, [currentVote]);
+
+  useEffect(() => {
+    setDisplayedCount(count);
+  }, [count]);
 
   function handleVote(value: 1 | -1) {
     if (!user) {
@@ -36,6 +46,21 @@ export function VoteButton({
       setTimeout(() => setAuthPrompt(false), 3500);
       openAuthModal();
       return;
+    }
+
+    const prevVote = activeVote;
+    const prevCount = displayedCount;
+
+    // Optimistic toggle
+    if (activeVote === value) {
+      setActiveVote(null);
+      setDisplayedCount((c) => c - value);
+    } else if (activeVote === null) {
+      setActiveVote(value);
+      setDisplayedCount((c) => c + value);
+    } else {
+      setActiveVote(value);
+      setDisplayedCount((c) => c + value * 2);
     }
 
     mutate(
@@ -46,8 +71,20 @@ export function VoteButton({
         queryKey,
       },
       {
-        onSuccess,
+        onSuccess: (res) => {
+          if (res?.current_vote !== undefined) {
+            setActiveVote(
+              res.current_vote === 1 ? 1 : res.current_vote === -1 ? -1 : null
+            );
+          }
+          if (res?.votes_count !== undefined) {
+            setDisplayedCount(res.votes_count);
+          }
+          onSuccess?.(res);
+        },
         onError: (err: unknown) => {
+          setActiveVote(prevVote);
+          setDisplayedCount(prevCount);
           const status = (err as { status?: number })?.status;
           if (status === 401) {
             setAuthPrompt(true);
@@ -59,8 +96,8 @@ export function VoteButton({
     );
   }
 
-  const upActive = currentVote === 1;
-  const downActive = currentVote === -1;
+  const upActive = activeVote === 1;
+  const downActive = activeVote === -1;
 
   const UpBtn = (
     <button
@@ -94,7 +131,7 @@ export function VoteButton({
           : 'var(--text-secondary)',
       }}
     >
-      {count}
+      {displayedCount}
     </span>
   );
 

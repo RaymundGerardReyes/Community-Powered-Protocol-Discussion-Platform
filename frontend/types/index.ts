@@ -29,12 +29,14 @@ export interface Protocol {
 export interface Thread {
   id: number;
   title: string;
-  body: string;
+  content: string;
+  body?: string;
   protocol_id: number;
   views_count: number;
   votes_count: number;
   comments_count: number;
   author: User;
+  protocol?: Protocol;
   comments?: Comment[];
   created_at: string;
   updated_at: string;
@@ -42,10 +44,12 @@ export interface Thread {
 
 export interface Comment {
   id: number;
-  body: string;
+  content: string;
+  body?: string;
   thread_id: number;
   parent_id: number | null;
-  replies_count: number;
+  replies_count?: number;
+  votes_count?: number;
   author: User;
   replies?: Comment[];
   created_at: string;

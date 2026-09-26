@@ -93,7 +93,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
               className="mt-2 text-xs leading-relaxed whitespace-pre-wrap"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {comment.body}
+              {comment.content ?? comment.body}
             </p>
 
             {/* Actions: Vote + Reply */}
@@ -102,7 +102,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
                 votableType="comment"
                 votableId={comment.id}
                 currentVote={null}
-                count={0}
+                count={comment.votes_count ?? 0}
                 queryKey={['thread', comment.thread_id]}
                 layout="horizontal"
               />
