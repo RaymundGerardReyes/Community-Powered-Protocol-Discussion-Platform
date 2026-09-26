@@ -93,3 +93,21 @@
 - **Polymorphic Votable Type Shorthands:**
   - When dispatching votes via `POST /api/v1/votes`, always send canonical shorthand identifiers: `'protocol'`, `'thread'`, or `'comment'`.
   - Avoid raw PHP FQCN string literals (e.g. `'App\Models\Thread'`) in client code, which suffer from backslash escape stripping in JavaScript.
+
+---
+
+## 9. Semantic Versioning & Release Pipeline Orchestration
+- **Pipeline Invariant:**
+  - Every batch of bug updates, stability fixes, or new features MUST culminate in an explicit Semantic Version bump (`MAJOR.MINOR.PATCH`) and annotated git tag.
+  - Never leave significant bug fixes or features untagged in `HEAD`.
+- **SemVer Increment Guidelines:**
+  - **PATCH (`vX.Y.Z+1`):** Backward-compatible bug fixes, UI regressions, typo/validation corrections, and environment tuning (e.g., Redis local dev decoupling).
+  - **MINOR (`vX.Y+1.0`):** Backward-compatible feature additions, new test suites, or major non-breaking refactors.
+  - **MAJOR (`vX+1.0.0`):** Incompatible API changes, breaking database migrations, or breaking frontend contract rewrites.
+- **Release Orchestration Step Sequence:**
+  1. **Run & Verify All Tests:** Confirm 100% pass across backend (`php artisan test`) and frontend (`npx vitest run`).
+  2. **Synchronize Package Manifests:** Update `"version"` in `frontend/package.json` to match the target semver.
+  3. **Conventional Commit:** Stage and commit changes with descriptive type prefixes (`fix:`, `feat:`, `test:`, `chore:`).
+  4. **Mint Annotated Git Tag:** Execute `git tag -a vX.Y.Z -m "Release vX.Y.Z: <Summary of changes>"`.
+  5. **Verify Tag:** Confirm creation via `git tag -l -n3 "vX.Y.Z"`.
+
