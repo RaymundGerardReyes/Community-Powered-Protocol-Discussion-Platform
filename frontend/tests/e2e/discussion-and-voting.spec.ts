@@ -16,12 +16,12 @@ test.describe('Protocol Discussion & Voting Integration Flow', () => {
     await expect(page.locator('h2', { hasText: 'Discussion Threads' })).toBeVisible();
 
     // 4. Click the discussion thread link
-    const threadLink = page.locator('section ul li h3').first();
-    await expect(threadLink).toBeVisible();
+    const threadLink = page.locator('a[href^="/threads/"]').first();
+    await expect(threadLink).toBeVisible({ timeout: 10000 });
     await threadLink.click();
+    await expect(page).toHaveURL(/\/threads\/\d+/, { timeout: 10000 });
 
     // 5. Verify thread detail page renders with content and discussion
-    await expect(page).toHaveURL(/\/threads\/\d+/);
     await expect(page.locator('h2', { hasText: 'Discussion' })).toBeVisible();
 
     // 6. Before signing in, the comment box prompts to sign in

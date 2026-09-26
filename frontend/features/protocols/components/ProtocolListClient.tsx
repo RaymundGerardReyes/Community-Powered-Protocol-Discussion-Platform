@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProtocols } from '../hooks/useProtocols';
 import { ProtocolCard } from './ProtocolCard';
@@ -8,18 +9,18 @@ import type { ProtocolFilters } from '../api';
 export function ProtocolListClient({ initialParams }: { initialParams: Record<string, string> }) {
   const searchParams = useSearchParams();
 
-  const filters: ProtocolFilters = {
-    sort:     (searchParams.get('sort')     ?? initialParams.sort     ?? 'latest') as ProtocolFilters['sort'],
-    category:  searchParams.get('category') ?? initialParams.category ?? '',
-    status:    searchParams.get('status')   ?? initialParams.status   ?? '',
-    search:    searchParams.get('search')   ?? initialParams.search   ?? '',
-    page:      searchParams.get('page')     ?? initialParams.page     ?? '1',
-  };
-
-  // Remove empty strings so API doesn't receive ?status=
-  const cleanFilters = Object.fromEntries(
-    Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined)
-  ) as ProtocolFilters;
+  const cleanFilters = useMemo(() => {
+    const filters: ProtocolFilters = {
+      sort:     (searchParams.get('sort')     ?? initialParams.sort     ?? 'latest') as ProtocolFilters['sort'],
+      category:  searchParams.get('category') ?? initialParams.category ?? '',
+      status:    searchParams.get('status')   ?? initialParams.status   ?? '',
+      search:    searchParams.get('search')   ?? initialParams.search   ?? '',
+      page:      searchParams.get('page')     ?? initialParams.page     ?? '1',
+    };
+    return Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined)
+    ) as ProtocolFilters;
+  }, [searchParams, initialParams]);
 
   const { data, isLoading, isError, error } = useProtocols(cleanFilters);
 
