@@ -38,11 +38,44 @@ test('can filter protocols by category', function () {
         'status' => 'published',
     ]);
 
-    $response = $this->getJson('/api/v1/protocols?category=DeFi');
+    $response = $this->getJson('/api/v1/protocols?category=defi');
 
     $response->assertStatus(200);
     expect($response->json('data'))->toHaveCount(1)
         ->and($response->json('data.0.category'))->toBe('DeFi');
+
+    // Test slug-like normalized category (e.g. layer2 for Layer2)
+    Protocol::factory()->create([
+        'user_id' => $user->id,
+        'category' => 'Layer2',
+        'status' => 'published',
+    ]);
+    $layer2Response = $this->getJson('/api/v1/protocols?category=layer2');
+    $layer2Response->assertStatus(200);
+    expect($layer2Response->json('data'))->toHaveCount(1)
+        ->and($layer2Response->json('data.0.category'))->toBe('Layer2');
+});
+
+test('can search protocols case-insensitively across title and description', function () {
+    $user = User::factory()->create();
+    Protocol::factory()->create([
+        'user_id' => $user->id,
+        'title' => 'Decentralized ZK Rollup Protocol',
+        'description' => 'Scalable execution layer',
+        'status' => 'published',
+    ]);
+    Protocol::factory()->create([
+        'user_id' => $user->id,
+        'title' => 'Liquid Staking Derivative',
+        'description' => 'DeFi staking yield',
+        'status' => 'published',
+    ]);
+
+    // Lowercase search term against capitalized title
+    $response = $this->getJson('/api/v1/protocols?search=rollup');
+    $response->assertStatus(200);
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.title'))->toBe('Decentralized ZK Rollup Protocol');
 });
 
 test('can retrieve single protocol by slug', function () {

@@ -30,12 +30,12 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             $query->filterByCategory($filters['category']);
         }
 
-        // Text search across title and description
+        // Text search across title and description (case-insensitive)
         if (! empty($filters['search'])) {
-            $searchTerm = '%'.$filters['search'].'%';
+            $searchTerm = '%'.mb_strtolower($filters['search']).'%';
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'like', $searchTerm)
-                    ->orWhere('description', 'like', $searchTerm);
+                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                    ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
             });
         }
 

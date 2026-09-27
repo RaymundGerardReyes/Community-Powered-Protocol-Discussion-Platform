@@ -67,7 +67,17 @@ class Protocol extends Model
 
     public function scopeFilterByCategory(Builder $query, ?string $category): Builder
     {
-        return $category ? $query->where('category', $category) : $query;
+        if (! $category) {
+            return $query;
+        }
+
+        $lower = strtolower($category);
+        $compact = str_replace(['-', ' ', '_'], '', $lower);
+
+        return $query->where(function (Builder $q) use ($lower, $compact) {
+            $q->whereRaw('LOWER(category) = ?', [$lower])
+                ->orWhereRaw("LOWER(REPLACE(REPLACE(REPLACE(category, '-', ''), ' ', ''), '_', '')) = ?", [$compact]);
+        });
     }
 
     public function scopeSortedBy(Builder $query, ?string $sort): Builder

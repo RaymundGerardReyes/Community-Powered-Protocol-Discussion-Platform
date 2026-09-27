@@ -10,13 +10,17 @@ const SORT_OPTIONS = [
 ];
 
 const CATEGORY_OPTIONS = [
-  { label: 'All',            value: '' },
+  { label: 'All Categories', value: '' },
   { label: 'DeFi',           value: 'defi' },
   { label: 'Layer 2',        value: 'layer2' },
-  { label: 'NFT',            value: 'nft' },
-  { label: 'DAO',            value: 'dao' },
-  { label: 'Privacy',        value: 'privacy' },
   { label: 'Infrastructure', value: 'infrastructure' },
+  { label: 'Security',       value: 'security' },
+  { label: 'Cryptography',   value: 'cryptography' },
+  { label: 'Oracles',        value: 'oracles' },
+  { label: 'Governance',     value: 'governance' },
+  { label: 'Staking',        value: 'staking' },
+  { label: 'Identity',       value: 'identity' },
+  { label: 'Interoperability', value: 'interoperability' },
 ];
 
 const STATUS_OPTIONS = [
