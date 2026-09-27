@@ -225,6 +225,34 @@
 - **Unbounded Recursive Tree Rendering:**
   - Frontend comment components must render recursively for all descendant replies, using CSS indentation (`.comment-indent`) for visual hierarchy without capping or hiding replies at deep levels.
 
+---
+
+## 16. Case-Insensitive Taxonomy Filtering & Search Input UI/UX Standard
+- **Case-Insensitive Query Invariant:**
+  - Database queries filtering by categories, tags, or status must never rely on case-sensitive equality (`where('category', $category)`).
+  - Always use case-insensitive comparisons across PostgreSQL and SQLite:
+    ```php
+    $lower = strtolower($category);
+    $compact = str_replace(['-', ' ', '_'], '', $lower);
+    $query->where(function ($q) use ($lower, $compact) {
+        $q->whereRaw('LOWER(category) = ?', [$lower])
+          ->orWhereRaw("LOWER(REPLACE(REPLACE(REPLACE(category, '-', ''), ' ', ''), '_', '')) = ?", [$compact]);
+    });
+    ```
+- **Case-Insensitive Free-Text Search:**
+  - Fallback SQL text search must use `LOWER(column) LIKE ?` with lowercase search terms to guarantee case-insensitivity on PostgreSQL:
+    ```php
+    $term = '%'.mb_strtolower($search).'%';
+    $query->where(function ($q) use ($term) {
+        $q->whereRaw('LOWER(title) LIKE ?', [$term])
+          ->orWhereRaw('LOWER(description) LIKE ?', [$term]);
+    });
+    ```
+- **Search Input Layout & Icon Clearance:**
+  - Inputs with absolute left icons must guarantee explicit padding (`padding-left: 2.5rem`) to prevent CSS cascade resets from colliding text with the icon.
+  - Native WebKit search decorations must be suppressed (`-webkit-appearance: none; display: none`) to eliminate user-agent icon collisions, and an explicit interactive clear button (`✕`) must be provided.
+
+
 
 
 
