@@ -187,4 +187,25 @@
   - Client-side auth verification (`/api/v1/auth/me`) must be deduplicated across component renders and React 18/19 StrictMode double-invocations using in-flight promise caching or cleanup abort guards.
   - Never allow unthrottled duplicate calls to `/api/v1/auth/me` within the same navigation or render cycle.
 
+---
+
+## 14. Relational RDBMS & Storage Topology Standard: PostgreSQL TEXT/TOAST, JSONB & Search Sidecar
+- **Database Model vs. Data Length Invariant:**
+  - Data length (large strings, technical specifications, discussions, or code blocks) is an internal storage characteristic, NOT a criterion for choosing NoSQL or document databases over relational databases.
+  - Never introduce MongoDB or document stores solely because fields like `threads.content` or `comments.content` can grow very long.
+- **PostgreSQL TOAST Mechanism:**
+  - PostgreSQL automatically manages large column values using TOAST (The Oversized-Attribute Storage Technique), compressing and storing oversized attributes out-of-line in separate physical storage chunks without impacting heap page scans.
+- **Relational Integrity Primacy:**
+  - The core domain model relies strictly on relational guarantees:
+    - User -> Protocol -> Thread -> Comment -> Nested Replies (Adjacency List with `parent_id` FK).
+    - Foreign key constraints with `cascadeOnDelete()` and `nullOnDelete()`.
+    - Unique compound constraints (e.g. `[protocol_id, user_id]` on reviews, `[user_id, votable_type, votable_id]` on votes).
+- **Document-like Data via JSONB:**
+  - For genuinely variable, polymorphic, or semi-structured data (e.g., `protocols.metadata` containing dynamic audits, tags, and contract addresses), use PostgreSQL `JSONB` rather than introducing a separate document database.
+- **Dedicated Search Offloading (Typesense Sidecar):**
+  - Full-text fuzzy search, prefix matching, and relevance ranking belong in the Typesense search sidecar. The relational database remains the single source of truth for all writes, updates, and relational queries.
+- **Extreme Payload Threshold:**
+  - If single posts or artifacts exceed hundreds of kilobytes or megabytes, evaluate PostgreSQL `TEXT` vs. S3/object storage with relational URL pointers, rather than switching the transactional data layer to MongoDB.
+
+
 
