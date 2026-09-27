@@ -207,5 +207,24 @@
 - **Extreme Payload Threshold:**
   - If single posts or artifacts exceed hundreds of kilobytes or megabytes, evaluate PostgreSQL `TEXT` vs. S3/object storage with relational URL pointers, rather than switching the transactional data layer to MongoDB.
 
+---
+
+## 15. Comment Hierarchy, Arbitrary Recursion & Timestamp Precision Standard
+- **In-Memory O(N) Tree Assembly over Hardcoded Nesting:**
+  - Never hardcode multi-level eager loading (e.g. `with(['replies.replies.replies.user'])`).
+  - Retrieve thread comments with their authors in a single query (`$thread->comments()->with('user')->orderBy('created_at')->get()`), group by `parent_id`, assign the `replies` relation in memory in $O(N)$ time, and return the root comments (`whereNull('parent_id')`).
+- **Parent Comment Thread Boundary Validation:**
+  - All nested comment creations must validate that `parent_id` belongs to the exact target thread:
+    ```php
+    Rule::exists('comments', 'id')->where('thread_id', $threadId)
+    ```
+  - This prevents cross-thread parent referencing from corrupting discussion trees.
+- **Timestamp Precision Invariant:**
+  - Never truncate `created_at` timestamps at the API or resource layer; always emit full ISO-8601 UTC strings (`toISOString()`).
+  - Frontend formatters must preserve hours, minutes, and seconds (e.g., `Sep 27, 2026 • 11:14:42 PM`).
+- **Unbounded Recursive Tree Rendering:**
+  - Frontend comment components must render recursively for all descendant replies, using CSS indentation (`.comment-indent`) for visual hierarchy without capping or hiding replies at deep levels.
+
+
 
 
