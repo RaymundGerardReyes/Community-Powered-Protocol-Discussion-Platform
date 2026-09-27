@@ -175,3 +175,16 @@
   - Every API response must attach `X-Response-Time` and W3C standard `Server-Timing: app;dur=...` headers via middleware to isolate actual server execution time from TCP socket keep-alive timeouts.
   - Performance compliance must be verifiable via `php artisan benchmark:latency --count=50`.
 
+---
+
+## 13. PHP CLI Server Keep-Alive Artifacts & Client-Side Auth Deduplication
+- **Keep-Alive Socket Duration vs Execution Time:**
+  - `php artisan serve` measures elapsed wall-clock time between TCP socket `Accepted` and socket `Closing` (`ServeCommand.php`).
+  - In HTTP/1.1 with persistent connections (`Connection: keep-alive`), PHP's built-in web server holds the socket open for its **500 ms idle timeout** waiting for subsequent pipelined requests.
+  - When a standalone request arrives without an immediate follow-up on the exact same socket, `artisan serve` logs `~ 505ms–515ms` even though actual application execution was `< 10ms`.
+  - Always verify actual application latency via `X-Response-Time`, `Server-Timing: app;dur=...`, or `php artisan benchmark:latency`.
+- **Frontend Auth Verification Deduplication:**
+  - Client-side auth verification (`/api/v1/auth/me`) must be deduplicated across component renders and React 18/19 StrictMode double-invocations using in-flight promise caching or cleanup abort guards.
+  - Never allow unthrottled duplicate calls to `/api/v1/auth/me` within the same navigation or render cycle.
+
+
