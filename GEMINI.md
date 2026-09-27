@@ -252,7 +252,21 @@
   - Inputs with absolute left icons must guarantee explicit padding (`padding-left: 2.5rem`) to prevent CSS cascade resets from colliding text with the icon.
   - Native WebKit search decorations must be suppressed (`-webkit-appearance: none; display: none`) to eliminate user-agent icon collisions, and an explicit interactive clear button (`✕`) must be provided.
 
+---
 
-
-
-
+## 17. RSC / Client State Synchronization & Live Dynamic Tree Mutations
+- **Client Subscription via Hybrid Initial Data Pattern:**
+  - When an async Server Component (RSC) provides initial data, the receiving interactive section must bind to a TanStack React Query hook (e.g. `useComments(threadId, initialComments)`) utilizing `initialData: initialComments`.
+  - This guarantees instant SSR/RSC rendering with zero loading flicker while enabling real-time client mutations to trigger immediate re-renders.
+- **Optimistic Recursive Cache Insertion:**
+  - Upon successful creation of a comment or reply, `CommentForm` must immediately update the active query cache synchronously using an immutable tree helper (`insertCommentIntoTree`):
+    - Top-level comments append to the root array.
+    - Nested replies find the matching `parent_id` at arbitrary recursion depths and append to `parent.replies`.
+    - Duplicate IDs are deduplicated.
+  - The newly submitted comment/reply appears in the DOM at $0\text{ ms}$ latency before any background network refetch completes.
+- **Dual Revalidation (Query Cache + RSC Router Refresh):**
+  - Following the synchronous cache insertion, the client must trigger both:
+    1. `queryClient.invalidateQueries({ queryKey: ['comments', threadId] })` for backend truth synchronization.
+    2. `router.refresh()` to update server-rendered counters (`thread.comments_count`) and Server Component caches.
+- **Auto-Expansion on Reply Invariant:**
+  - When submitting a reply to a collapsed parent comment, the parent comment must automatically expand (`setCollapsed(false)`), guaranteeing immediate visibility of the newly posted reply.
