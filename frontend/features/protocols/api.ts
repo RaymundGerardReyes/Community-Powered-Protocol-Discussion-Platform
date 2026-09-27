@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { apiClient } from '@/lib/api-client';
 import type { PaginatedResponse, Protocol, Review, Thread } from '@/types';
 
@@ -19,12 +20,13 @@ export async function fetchProtocols(
   return data;
 }
 
-export async function fetchProtocol(slug: string): Promise<Protocol> {
+export const fetchProtocol = cache(async (slug: string): Promise<Protocol> => {
   const { data } = await apiClient.get<{ data: Protocol }>(
     `/api/v1/protocols/${slug}`,
   );
   return data.data;
-}
+});
+
 
 export async function fetchProtocolThreads(
   protocolId: number,

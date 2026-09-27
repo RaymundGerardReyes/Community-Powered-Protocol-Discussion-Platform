@@ -41,13 +41,23 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
     throw err;
   }
 
-  const [threadsResult, reviewsResult] = await Promise.allSettled([
-    fetchProtocolThreads(protocol.id),
-    fetchProtocolReviews(protocol.id),
-  ]);
+  let threads = protocol.threads ?? [];
+  let reviews = protocol.reviews ?? [];
 
-  const threads = threadsResult.status === 'fulfilled' ? threadsResult.value.data : [];
-  const reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value.data : [];
+  if (!protocol.threads || !protocol.reviews) {
+    const [threadsResult, reviewsResult] = await Promise.allSettled([
+      protocol.threads ? Promise.resolve({ data: protocol.threads }) : fetchProtocolThreads(protocol.id),
+      protocol.reviews ? Promise.resolve({ data: protocol.reviews }) : fetchProtocolReviews(protocol.id),
+    ]);
+
+    if (!protocol.threads && threadsResult.status === 'fulfilled') {
+      threads = threadsResult.value.data;
+    }
+    if (!protocol.reviews && reviewsResult.status === 'fulfilled') {
+      reviews = reviewsResult.value.data;
+    }
+  }
+
 
   return (
     <div className='mx-auto max-w-4xl px-4 py-10'>

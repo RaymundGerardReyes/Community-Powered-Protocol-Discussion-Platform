@@ -1,6 +1,8 @@
 // Single source of truth for talking to the Laravel 13 REST API.
 // No component calls fetch()/axios directly — import this instead.
 import axios, { type AxiosError } from 'axios';
+import http from 'node:http';
+import https from 'node:https';
 
 export interface ApiError {
   message: string;
@@ -8,11 +10,16 @@ export interface ApiError {
   status: number;
 }
 
+const isServer = typeof window === 'undefined';
+
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
   withCredentials: true,
+  httpAgent: isServer ? new http.Agent({ keepAlive: true, maxSockets: 50 }) : undefined,
+  httpsAgent: isServer ? new https.Agent({ keepAlive: true, maxSockets: 50 }) : undefined,
 });
+
 
 // Request interceptor: add auth token from localStorage (client-side only)
 apiClient.interceptors.request.use((config) => {

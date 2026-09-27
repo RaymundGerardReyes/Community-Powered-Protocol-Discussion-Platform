@@ -22,6 +22,8 @@ export interface Protocol {
   reviews_count: number;
   metadata: Record<string, unknown> | null;
   author: User;
+  threads?: Thread[];
+  reviews?: Review[];
   created_at: string;
   updated_at: string;
 }

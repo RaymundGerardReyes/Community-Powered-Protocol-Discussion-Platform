@@ -32,6 +32,8 @@ class ProtocolResource extends JsonResource
             'average_rating' => (float) $this->average_rating,
             'metadata' => $this->metadata,
             'author' => new UserResource($this->whenLoaded('user')),
+            'threads' => ThreadResource::collection($this->whenLoaded('threads')),
+            'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
