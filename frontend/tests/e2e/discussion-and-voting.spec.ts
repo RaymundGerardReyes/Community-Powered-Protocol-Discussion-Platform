@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from './mock-data';
 
 test.describe('Protocol Discussion & Voting Integration Flow', () => {
   test('full user journey: browse protocol, view thread, login via demo switcher, vote, and post comment', async ({ page }) => {
+    await setupApiMocks(page);
     // 1. Visit protocols listing
     await page.goto('/protocols');
     await expect(page.locator('h1')).toContainText('Protocols');
