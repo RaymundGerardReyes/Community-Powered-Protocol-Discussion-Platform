@@ -31,14 +31,26 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+let inFlightMePromise: Promise<{ data: { user: User } }> | null = null;
+
+function fetchMeDeduplicated(): Promise<{ data: { user: User } }> {
+  if (!inFlightMePromise) {
+    inFlightMePromise = apiClient.get<{ user: User }>('/api/v1/auth/me').finally(() => {
+      inFlightMePromise = null;
+    });
+  }
+  return inFlightMePromise;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Initialize from localStorage
+  // Initialize from localStorage with in-flight deduplication
   useEffect(() => {
+    let isSubscribed = true;
     const savedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (!savedToken) {
       setIsLoading(false);
@@ -46,19 +58,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setToken(savedToken);
-    apiClient
-      .get<{ user: User }>('/api/v1/auth/me')
+    fetchMeDeduplicated()
       .then((res) => {
-        setUser(res.data.user);
+        if (isSubscribed) {
+          setUser(res.data.user);
+        }
       })
       .catch(() => {
-        localStorage.removeItem('auth_token');
-        setToken(null);
-        setUser(null);
+        if (isSubscribed) {
+          localStorage.removeItem('auth_token');
+          setToken(null);
+          setUser(null);
+        }
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isSubscribed) {
+          setIsLoading(false);
+        }
       });
+
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   const login = useCallback(async (email: string, password = 'password') => {
