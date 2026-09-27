@@ -20,8 +20,14 @@ export const typesenseClient =
 
 export async function searchProtocols(query: string) {
   if (!typesenseClient) return null; // caller falls back to Laravel
-  return typesenseClient
-    .collections('protocols')
-    .documents()
-    .search({ q: query, query_by: 'title,description', per_page: 20 });
+  try {
+    return await typesenseClient
+      .collections('protocols')
+      .documents()
+      .search({ q: query, query_by: 'title,description', per_page: 20 });
+  } catch {
+    // If Typesense is unreachable or times out, gracefully fall back to Laravel search
+    return null;
+  }
 }
+
