@@ -151,3 +151,27 @@
   - `.gitignore` must explicitly ignore `AGENTS.md` and `CLAUDE.md` to prevent accidental re-introduction by external tooling.
 - **Remote Hygiene & Git Tracking:**
   - When cleaning legacy agent files, always delete them via `git rm`, synchronize package manifests, commit with `chore:`, tag with semantic versioning, and push all commits and tags to `origin/main` to guarantee remote eradication.
+
+---
+
+## 12. Loopback Latency SLO & Performance Benchmarking Standard
+- **Loopback Context & Diagnostic Principle:**
+  - Because local loopback network overhead is negligible (< 1 ms), end-to-end API latency directly reflects application stack efficiency (bootstrapping, query execution, business logic, serialization, and connection lifecycle).
+  - Any regular local API endpoint taking > 500 ms must be treated as a performance defect and investigated across the stack rather than dismissed as "local dev overhead".
+- **Local Service Level Objectives (SLO) for Synchronous CRUD Endpoints:**
+  - **P50 (Median):** `< 100 ms`
+  - **P95:** `< 250 ms`
+  - **P99:** `< 500 ms`
+- **6-Tier Development Performance Rubric:**
+  | Latency | Classification | Interpretation |
+  | :--- | :--- | :--- |
+  | `< 50 ms` | **Excellent** | Highly responsive, optimal query and caching |
+  | `50–100 ms` | **Very Good** | Strong loopback execution |
+  | `100–250 ms` | **Good** | Acceptable / healthy local operation |
+  | `250–500 ms` | **Moderate** | Investigate if consistently occurring |
+  | `> 500 ms` | **Slow** | Defect; active investigation required |
+  | `> 1 s` | **Very Slow** | Critical bottleneck; blocking investigation |
+- **Real Execution Profiling Invariant:**
+  - Every API response must attach `X-Response-Time` and W3C standard `Server-Timing: app;dur=...` headers via middleware to isolate actual server execution time from TCP socket keep-alive timeouts.
+  - Performance compliance must be verifiable via `php artisan benchmark:latency --count=50`.
+
