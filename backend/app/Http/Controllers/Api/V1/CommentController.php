@@ -19,17 +19,35 @@ class CommentController extends Controller
     ) {}
 
     /**
-     * Display a listing of comments for a thread.
+     * Display a listing of comments for a thread assembled into an arbitrary depth tree.
      */
     public function index(Thread $thread): AnonymousResourceCollection
     {
-        $comments = $thread->comments()
-            ->whereNull('parent_id')
-            ->with(['user', 'replies.user'])
-            ->orderBy('created_at')
+        $allComments = $thread->comments()
+            ->with('user')
+            ->orderBy('created_at', 'asc')
             ->get();
 
-        return CommentResource::collection($comments);
+        $tree = $this->buildCommentTree($allComments);
+
+        return CommentResource::collection($tree);
+    }
+
+    /**
+     * Reconstruct nested parent-child relationship tree in memory O(N).
+     *
+     * @param  \Illuminate\Support\Collection<int, Comment>  $comments
+     * @return \Illuminate\Support\Collection<int, Comment>
+     */
+    protected function buildCommentTree(\Illuminate\Support\Collection $comments): \Illuminate\Support\Collection
+    {
+        $grouped = $comments->groupBy('parent_id');
+
+        foreach ($comments as $comment) {
+            $comment->setRelation('replies', $grouped->get($comment->id, collect()));
+        }
+
+        return $comments->whereNull('parent_id')->values();
     }
 
     /**

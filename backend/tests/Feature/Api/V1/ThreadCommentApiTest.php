@@ -135,3 +135,89 @@ test('author can delete their comment and decrement thread replies count', funct
     $this->assertDatabaseMissing('comments', ['id' => $comment->id]);
     expect($thread->fresh()->replies_count)->toBe(0);
 });
+
+test('returns recursively assembled comment tree with arbitrary depth and ISO timestamps', function () {
+    $thread = Thread::factory()->create();
+
+    $zuck = User::factory()->create(['name' => 'Mr. Zuckerberg']);
+    $bezos = User::factory()->create(['name' => 'Mr. Bezos']);
+    $musk = User::factory()->create(['name' => 'Mr. Musk']);
+    $gates = User::factory()->create(['name' => 'Mr. Gates']);
+    $jobs = User::factory()->create(['name' => 'Mr. Jobs']);
+
+    // A: Zuckerberg (root)
+    $commentA = Comment::factory()->create([
+        'thread_id' => $thread->id,
+        'user_id' => $zuck->id,
+        'parent_id' => null,
+        'content' => 'Original comment from Zuckerberg',
+        'created_at' => '2026-09-27 15:14:42',
+    ]);
+
+    // B: Bezos (reply to A)
+    $commentB = Comment::factory()->create([
+        'thread_id' => $thread->id,
+        'user_id' => $bezos->id,
+        'parent_id' => $commentA->id,
+        'content' => 'Reply from Bezos',
+        'created_at' => '2026-09-27 15:15:07',
+    ]);
+
+    // C: Musk (reply to B)
+    $commentC = Comment::factory()->create([
+        'thread_id' => $thread->id,
+        'user_id' => $musk->id,
+        'parent_id' => $commentB->id,
+        'content' => 'Reply from Musk',
+        'created_at' => '2026-09-27 15:15:41',
+    ]);
+
+    // D: Gates (reply to C)
+    $commentD = Comment::factory()->create([
+        'thread_id' => $thread->id,
+        'user_id' => $gates->id,
+        'parent_id' => $commentC->id,
+        'content' => 'Reply from Gates',
+        'created_at' => '2026-09-27 15:16:03',
+    ]);
+
+    // E: Jobs (reply to A)
+    $commentE = Comment::factory()->create([
+        'thread_id' => $thread->id,
+        'user_id' => $jobs->id,
+        'parent_id' => $commentA->id,
+        'content' => 'Reply from Jobs',
+        'created_at' => '2026-09-27 15:17:12',
+    ]);
+
+    $response = $this->getJson("/api/v1/threads/{$thread->id}/comments");
+
+    $response->assertStatus(200);
+
+    $data = $response->json('data');
+    expect($data)->toHaveCount(1);
+    expect($data[0]['author']['name'])->toBe('Mr. Zuckerberg');
+    expect($data[0]['created_at'])->toContain('2026-09-27T15:14:42');
+
+    // Zuckerberg has 2 direct replies: Bezos and Jobs
+    $aReplies = $data[0]['replies'];
+    expect($aReplies)->toHaveCount(2);
+    expect($aReplies[0]['author']['name'])->toBe('Mr. Bezos');
+    expect($aReplies[1]['author']['name'])->toBe('Mr. Jobs');
+
+    // Bezos has 1 reply: Musk
+    $bReplies = $aReplies[0]['replies'];
+    expect($bReplies)->toHaveCount(1);
+    expect($bReplies[0]['author']['name'])->toBe('Mr. Musk');
+
+    // Musk has 1 reply: Gates
+    $cReplies = $bReplies[0]['replies'];
+    expect($cReplies)->toHaveCount(1);
+    expect($cReplies[0]['author']['name'])->toBe('Mr. Gates');
+
+    // Gates has 0 replies
+    expect($cReplies[0]['replies'])->toBeEmpty();
+
+    // Jobs has 0 replies
+    expect($aReplies[1]['replies'])->toBeEmpty();
+});

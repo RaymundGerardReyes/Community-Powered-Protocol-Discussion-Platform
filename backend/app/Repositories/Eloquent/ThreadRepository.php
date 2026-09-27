@@ -33,14 +33,21 @@ class ThreadRepository implements ThreadRepositoryInterface
 
     public function findByIdWithReplies(int $threadId): Thread
     {
-        return Thread::with([
-            'user',
-            'protocol',
-            'comments' => function ($query) {
-                $query->whereNull('parent_id')
-                    ->with(['user', 'replies.user', 'replies.replies.user'])
-                    ->orderBy('created_at', 'asc');
-            },
-        ])->findOrFail($threadId);
+        $thread = Thread::with(['user', 'protocol'])->findOrFail($threadId);
+
+        $comments = $thread->comments()
+            ->with('user')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $grouped = $comments->groupBy('parent_id');
+
+        foreach ($comments as $comment) {
+            $comment->setRelation('replies', $grouped->get($comment->id, collect()));
+        }
+
+        $thread->setRelation('comments', $comments->whereNull('parent_id')->values());
+
+        return $thread;
     }
 }

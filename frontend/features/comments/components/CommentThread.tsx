@@ -5,7 +5,24 @@ import { VoteButton } from '@/features/votes/components/VoteButton';
 import { CommentForm } from './CommentForm';
 import type { Comment } from '@/types';
 
-const MAX_VISUAL_DEPTH = 5;
+const MAX_VISUAL_DEPTH = 12;
+
+function formatCommentTimestamp(dateStr: string): string {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const datePart = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timePart = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+  return `${datePart} • ${timePart}`;
+}
 
 function AuthorAvatar({ name }: { name: string }) {
   const initials = name
@@ -65,11 +82,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
               style={{ color: 'var(--text-muted)' }}
               dateTime={comment.created_at}
             >
-              {new Date(comment.created_at).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              {formatCommentTimestamp(comment.created_at)}
             </time>
           </div>
 
@@ -140,7 +153,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
       </div>
 
       {/* Render child replies recursively */}
-      {!collapsed && hasReplies && effectiveDepth < MAX_VISUAL_DEPTH && (
+      {!collapsed && hasReplies && (
         <div className="space-y-2 mt-2">
           {comment.replies!.map((reply) => (
             <CommentItem key={reply.id} comment={reply} depth={depth + 1} />

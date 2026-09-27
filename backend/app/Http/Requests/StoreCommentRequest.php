@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Thread;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCommentRequest extends FormRequest
 {
@@ -17,9 +19,16 @@ class StoreCommentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $thread = $this->route('thread');
+        $threadId = $thread instanceof Thread ? $thread->id : (int) $thread;
+
         return [
             'content' => ['required', 'string'],
-            'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('comments', 'id')->where('thread_id', $threadId),
+            ],
         ];
     }
 }
