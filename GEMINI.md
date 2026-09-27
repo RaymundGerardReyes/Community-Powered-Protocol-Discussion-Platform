@@ -111,3 +111,17 @@
   4. **Mint Annotated Git Tag:** Execute `git tag -a vX.Y.Z -m "Release vX.Y.Z: <Summary of changes>"`.
   5. **Verify Tag:** Confirm creation via `git tag -l -n3 "vX.Y.Z"`.
 
+---
+
+## 10. Frontend 3-Tier Testing Directory Architecture Standard
+- **Directory Hierarchy Parity:**
+  - All frontend tests MUST reside under the dedicated `frontend/tests/` directory structured into 3 distinct tiers, mirroring the backend testing architecture:
+    1. `frontend/tests/unit/`: UI design system components (`components/`), utility functions (`lib/`), and raw API services (`api/`).
+    2. `frontend/tests/integration/`: State providers (`auth/`), custom hooks with React Query cache (`votes/`), composite filter bars & paginated lists (`protocols/`), and recursive discussion threads (`comments/`).
+    3. `frontend/tests/e2e/`: Full browser user journeys using Playwright (`specs`, `mock-data`, and mock servers).
+- **Prohibition of Source Directory Co-location:**
+  - Never place `.test.ts`, `.test.tsx`, or `.spec.ts` files inside production source directories (`features/`, `components/`, `lib/`, `app/`). Source directories must remain pure production code.
+- **Test Runner Scopes:**
+  - **Vitest:** Scans `tests/unit` and `tests/integration`, strictly excluding `tests/e2e`.
+  - **Playwright:** Scans `tests/e2e`.
+
