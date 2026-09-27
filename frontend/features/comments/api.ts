@@ -8,6 +8,13 @@ export interface CreateCommentPayload {
   parent_id?: number | null;
 }
 
+export async function fetchComments(threadId: number | string): Promise<Comment[]> {
+  const { data } = await apiClient.get<{ data: Comment[] }>(
+    `/api/v1/threads/${threadId}/comments`,
+  );
+  return data.data;
+}
+
 export async function createComment(payload: CreateCommentPayload): Promise<Comment> {
   const content = payload.content ?? payload.body ?? '';
   const { data } = await apiClient.post<{ data: Comment }>(

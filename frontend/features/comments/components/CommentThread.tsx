@@ -1,8 +1,10 @@
 'use client';
+
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { VoteButton } from '@/features/votes/components/VoteButton';
 import { CommentForm } from './CommentForm';
+import { useComments } from '../hooks/useComments';
 import type { Comment } from '@/types';
 
 const MAX_VISUAL_DEPTH = 12;
@@ -54,7 +56,6 @@ function CommentItem({ comment, depth }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
 
   const hasReplies = (comment.replies?.length ?? 0) > 0;
-  const effectiveDepth = Math.min(depth, MAX_VISUAL_DEPTH);
 
   return (
     <div
@@ -116,7 +117,7 @@ function CommentItem({ comment, depth }: CommentItemProps) {
                 votableId={comment.id}
                 currentVote={null}
                 count={comment.votes_count ?? 0}
-                queryKey={['thread', comment.thread_id]}
+                queryKey={['comments', comment.thread_id]}
                 layout="horizontal"
               />
 
@@ -143,7 +144,10 @@ function CommentItem({ comment, depth }: CommentItemProps) {
                 <CommentForm
                   threadId={comment.thread_id}
                   parentId={comment.id}
-                  onSuccess={() => setIsReplying(false)}
+                  onSuccess={() => {
+                    setIsReplying(false);
+                    setCollapsed(false);
+                  }}
                   onCancel={() => setIsReplying(false)}
                 />
               </div>
@@ -164,7 +168,14 @@ function CommentItem({ comment, depth }: CommentItemProps) {
   );
 }
 
-export function CommentThread({ comments }: { comments: Comment[] }) {
+export interface CommentThreadProps {
+  comments?: Comment[];
+  threadId?: number;
+}
+
+export function CommentThread({ comments: initialComments = [], threadId }: CommentThreadProps) {
+  const { data: comments = initialComments } = useComments(threadId, initialComments);
+
   if (!comments.length) {
     return (
       <div

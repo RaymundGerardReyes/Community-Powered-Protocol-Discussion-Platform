@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fetchThread } from '@/features/threads/api';
-import { CommentThread } from '@/features/comments/components/CommentThread';
-import { CommentFormWrapper } from '@/features/comments/components/CommentFormWrapper';
+import { ThreadDiscussion } from '@/features/comments/components/ThreadDiscussion';
 import { VoteButtonWrapper } from '@/features/votes/components/VoteButtonWrapper';
 import type { ApiError } from '@/lib/api-client';
 
@@ -161,32 +160,11 @@ export default async function ThreadDetailPage({ params }: PageProps) {
       </article>
 
       {/* ── Comments Section ─────────────────────────────────────────── */}
-      <section>
-        {/* Section header */}
-        <div className='flex items-center gap-2 mb-5'>
-          <h2 className='section-title'>Discussion</h2>
-          <span
-            className='badge badge-info'
-            style={{ borderRadius: '999px' }}
-          >
-            {thread.comments_count}
-          </span>
-        </div>
-
-        {/* New comment box */}
-        <div className='card-flat p-5 mb-6'>
-          <h3
-            className='text-xs font-semibold uppercase tracking-wider mb-3'
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Leave a response
-          </h3>
-          <CommentFormWrapper threadId={thread.id} />
-        </div>
-
-        {/* Comment tree */}
-        <CommentThread comments={comments} />
-      </section>
+      <ThreadDiscussion
+        threadId={thread.id}
+        initialComments={comments}
+        initialCount={thread.comments_count}
+      />
     </div>
   );
 }

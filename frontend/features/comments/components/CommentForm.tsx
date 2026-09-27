@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createComment } from '../api';
+import { insertCommentIntoTree } from '../lib/tree';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/features/auth/AuthContext';
+import type { Comment } from '@/types';
 
 interface CommentFormProps {
   threadId: number;
@@ -16,13 +19,36 @@ interface CommentFormProps {
 export function CommentForm({ threadId, parentId, onSuccess, onCancel }: CommentFormProps) {
   const { user, openAuthModal } = useAuth();
   const [body, setBody] = useState('');
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => createComment({ thread_id: threadId, content: body, body, parent_id: parentId }),
-    onSuccess: () => {
+    mutationFn: () =>
+      createComment({
+        thread_id: threadId,
+        content: body,
+        body,
+        parent_id: parentId,
+      }),
+    onSuccess: (newComment: Comment) => {
       setBody('');
-      queryClient.invalidateQueries({ queryKey: ['thread', threadId] });
+
+      // 1. Immediately update client cache so reply/comment appears without reload
+      queryClient.setQueryData<Comment[]>(['comments', Number(threadId)], (oldComments = []) => {
+        return insertCommentIntoTree(oldComments, newComment);
+      });
+
+      // 2. Invalidate queries to ensure background sync with backend tree assembly
+      queryClient.invalidateQueries({ queryKey: ['comments', Number(threadId)] });
+      queryClient.invalidateQueries({ queryKey: ['thread', Number(threadId)] });
+
+      // 3. Revalidate Next.js Server Components in background
+      try {
+        router.refresh();
+      } catch {
+        // Safe fallback in non-Next environments
+      }
+
       onSuccess?.();
     },
   });
