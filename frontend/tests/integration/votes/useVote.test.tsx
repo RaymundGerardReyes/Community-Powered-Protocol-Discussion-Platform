@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useVote } from './useVote';
-import * as voteApi from '../api';
+import { useVote } from '@/features/votes/hooks/useVote';
+import * as voteApi from '@/features/votes/api';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -46,7 +46,6 @@ describe('useVote Hook Integration', () => {
       queryKey,
     });
 
-    // Check optimistic update in cache once onMutate has executed
     await waitFor(() => {
       const optimisticData = queryClient.getQueryData<{ votes_count: number }>(queryKey);
       expect(optimisticData?.votes_count).toBe(6);
@@ -72,10 +71,8 @@ describe('useVote Hook Integration', () => {
       queryKey,
     });
 
-    // Wait for mutation failure
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    // Verify cache rolled back to 10
     const rolledBackData = queryClient.getQueryData<{ votes_count: number }>(queryKey);
     expect(rolledBackData?.votes_count).toBe(10);
   });

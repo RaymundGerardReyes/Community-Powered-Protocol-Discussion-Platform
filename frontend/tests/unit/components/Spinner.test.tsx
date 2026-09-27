@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Spinner } from './Spinner';
+import { Spinner } from '@/components/ui/Spinner';
 
 describe('Spinner Component', () => {
   it('renders with accessible aria-label and spin animation', () => {

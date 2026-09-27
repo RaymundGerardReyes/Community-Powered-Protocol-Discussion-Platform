@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { ThreadCard } from './ThreadCard';
+import { ThreadCard } from '@/features/threads/components/ThreadCard';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import type { Thread } from '@/types';
 
@@ -29,26 +29,26 @@ describe('ThreadCard Component Integration', () => {
       views_count: 156,
       created_at: '2026-09-18T10:00:00Z',
       updated_at: '2026-09-18T10:00:00Z',
-      author: { id: 1, name: 'Vitalik B.' },
+      author: {
+        id: 1,
+        name: 'Vitalik B.',
+        email: 'vitalik@protocol.io',
+        created_at: '2026-09-01T00:00:00Z',
+      },
     };
 
     renderWithClient(<ThreadCard thread={mockThread} />);
 
-    // Link and title
     const titleLink = screen.getByRole('link', {
       name: 'State Transition Verification Mechanism',
     });
     expect(titleLink).toHaveAttribute('href', '/threads/42');
 
-    // Description/body
     expect(
       screen.getByText('Discussion regarding recursive STARK verification on Ethereum L1.'),
     ).toBeInTheDocument();
 
-    // Author
     expect(screen.getByText('Vitalik B.')).toBeInTheDocument();
-
-    // Counts
     expect(screen.getByText('8')).toBeInTheDocument();
     expect(screen.getByText('156')).toBeInTheDocument();
   });

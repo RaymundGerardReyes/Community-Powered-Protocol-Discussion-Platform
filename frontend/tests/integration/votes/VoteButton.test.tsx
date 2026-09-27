@@ -1,11 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { VoteButton } from './VoteButton';
+import { VoteButton } from '@/features/votes/components/VoteButton';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as AuthContextModule from '@/features/auth/AuthContext';
-import * as VotesApiModule from '../api';
+import * as VotesApiModule from '@/features/votes/api';
 
-vi.mock('../api');
+vi.mock('@/features/votes/api');
 
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createReview } from './api';
+import { createReview } from '@/features/reviews/api';
 import { apiClient } from '@/lib/api-client';
 
 describe('Reviews API Service', () => {
@@ -17,8 +17,13 @@ describe('Reviews API Service', () => {
       id: 99,
       protocol_id: 1,
       rating: 5,
-      verdict: 'approved',
       feedback: 'Excellent security considerations.',
+      author: {
+        id: 1,
+        name: 'Vitalik B.',
+        email: 'vitalik@protocol.io',
+        created_at: '2026-09-01T00:00:00Z',
+      },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

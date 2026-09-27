@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { RatingStars } from './RatingStars';
+import { RatingStars } from '@/components/ui/RatingStars';
 
 describe('RatingStars Component', () => {
   it('renders correct number of stars and formatted aria-label', () => {
@@ -13,7 +13,6 @@ describe('RatingStars Component', () => {
   });
 
   it('correctly calculates filled vs empty stars based on rounding', () => {
-    // 3.6 rounds to 4 filled stars out of 5
     const { container } = render(<RatingStars rating={3.6} max={5} />);
     const filledStars = container.querySelectorAll('svg.star-filled');
     const emptyStars = container.querySelectorAll('svg.star-empty');

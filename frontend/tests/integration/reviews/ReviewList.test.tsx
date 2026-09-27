@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ReviewList } from './ReviewList';
+import { ReviewList } from '@/features/reviews/components/ReviewList';
 import type { Review } from '@/types';
 
 describe('ReviewList Component Integration', () => {
@@ -16,24 +16,30 @@ describe('ReviewList Component Integration', () => {
       {
         id: 1,
         protocol_id: 10,
-        user_id: 101,
         rating: 5,
-        verdict: 'approved',
         feedback: 'Incredible architecture and sound cryptography.',
         created_at: '2026-09-15T12:00:00Z',
         updated_at: '2026-09-15T12:00:00Z',
-        author: { id: 101, name: 'Alice Cryptographer', email: 'alice@protocol.io' },
+        author: {
+          id: 101,
+          name: 'Alice Cryptographer',
+          email: 'alice@protocol.io',
+          created_at: '2026-09-01T00:00:00Z',
+        },
       },
       {
         id: 2,
         protocol_id: 10,
-        user_id: 102,
         rating: 3,
-        verdict: 'changes_requested',
         feedback: 'Needs clearer sequencer liveness fallbacks.',
         created_at: '2026-09-16T15:00:00Z',
         updated_at: '2026-09-16T15:00:00Z',
-        author: { id: 102, name: 'Bob Auditor', email: 'bob@protocol.io' },
+        author: {
+          id: 102,
+          name: 'Bob Auditor',
+          email: 'bob@protocol.io',
+          created_at: '2026-09-01T00:00:00Z',
+        },
       },
     ];
 

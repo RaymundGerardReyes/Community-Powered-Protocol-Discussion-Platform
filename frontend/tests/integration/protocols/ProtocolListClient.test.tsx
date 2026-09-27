@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { ProtocolListClient } from './ProtocolListClient';
-import * as useProtocolsHook from '../hooks/useProtocols';
+import { ProtocolListClient } from '@/features/protocols/components/ProtocolListClient';
+import * as useProtocolsHook from '@/features/protocols/hooks/useProtocols';
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -69,13 +69,21 @@ describe('ProtocolListClient Component Integration', () => {
         title: 'Decentralized ZK Rollup',
         description: 'Next-gen L2 scaling protocol',
         category: 'layer2',
-        status: 'published',
+        status: 'published' as const,
         votes_count: 42,
         average_rating: 4.8,
         reviews_count: 12,
         score: 480,
-        author: { id: 1, name: 'Vitalik B.' },
+        version: '1.0.0',
+        metadata: null,
+        author: {
+          id: 1,
+          name: 'Vitalik B.',
+          email: 'vitalik@protocol.io',
+          created_at: '2026-09-01T00:00:00Z',
+        },
         created_at: '2026-09-01T00:00:00Z',
+        updated_at: '2026-09-01T00:00:00Z',
       },
     ];
 

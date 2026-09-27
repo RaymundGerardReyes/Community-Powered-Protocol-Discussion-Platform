@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchThread, createThread } from './api';
+import { fetchThread, createThread } from '@/features/threads/api';
 import { apiClient } from '@/lib/api-client';
 
 describe('Threads API Service', () => {

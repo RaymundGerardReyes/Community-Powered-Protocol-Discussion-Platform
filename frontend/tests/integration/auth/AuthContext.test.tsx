@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { apiClient } from '@/lib/api-client';
 
 function TestConsumer() {
@@ -46,7 +46,12 @@ describe('AuthContext Integration', () => {
   it('restores authenticated user session when valid token exists in localStorage', async () => {
     localStorage.setItem('auth_token', 'valid-stored-token');
 
-    const mockUser = { id: 1, name: 'Vitalik B.', email: 'vitalik@protocol.io' };
+    const mockUser = {
+      id: 1,
+      name: 'Vitalik B.',
+      email: 'vitalik@protocol.io',
+      created_at: '2026-09-01T00:00:00Z',
+    };
     vi.spyOn(apiClient, 'get').mockResolvedValueOnce({
       data: { user: mockUser },
     });
@@ -59,7 +64,6 @@ describe('AuthContext Integration', () => {
 
     expect(screen.getByTestId('loading')).toHaveTextContent('loading');
 
-    // Wait for the token check promise to resolve
     await act(async () => {
       await Promise.resolve();
     });
@@ -90,7 +94,12 @@ describe('AuthContext Integration', () => {
   });
 
   it('login saves token, updates user state, and closes auth modal', async () => {
-    const mockUser = { id: 1, name: 'Vitalik B.', email: 'vitalik@protocol.io' };
+    const mockUser = {
+      id: 1,
+      name: 'Vitalik B.',
+      email: 'vitalik@protocol.io',
+      created_at: '2026-09-01T00:00:00Z',
+    };
     vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
       data: { user: mockUser, access_token: 'new-auth-token-123' },
     });
@@ -101,13 +110,11 @@ describe('AuthContext Integration', () => {
       </AuthProvider>,
     );
 
-    // Open modal first
     act(() => {
       screen.getByText('Open Modal').click();
     });
     expect(screen.getByTestId('modal')).toHaveTextContent('open');
 
-    // Trigger login
     await act(async () => {
       screen.getByText('Login').click();
     });
@@ -138,7 +145,6 @@ describe('AuthContext Integration', () => {
   });
 
   it('throws error when useAuth is consumed outside AuthProvider', () => {
-    // Suppress console.error during expected throw
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<TestConsumer />)).toThrow(

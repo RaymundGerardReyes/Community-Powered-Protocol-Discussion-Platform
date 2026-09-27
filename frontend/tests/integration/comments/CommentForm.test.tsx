@@ -1,11 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CommentForm } from './CommentForm';
+import { CommentForm } from '@/features/comments/components/CommentForm';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as AuthContextModule from '@/features/auth/AuthContext';
-import * as CommentsApiModule from '../api';
+import * as CommentsApiModule from '@/features/comments/api';
 
-vi.mock('../api');
+vi.mock('@/features/comments/api');
 
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({

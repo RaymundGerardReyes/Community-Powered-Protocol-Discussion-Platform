@@ -5,7 +5,7 @@ import {
   fetchProtocolThreads,
   fetchProtocolReviews,
   createProtocol,
-} from './api';
+} from '@/features/protocols/api';
 import { apiClient } from '@/lib/api-client';
 
 describe('Protocols API Service', () => {
@@ -76,6 +76,8 @@ describe('Protocols API Service', () => {
       description: 'L2 sequencing specification',
       status: 'draft' as const,
       category: 'layer2' as const,
+      version: '1.0.0',
+      metadata: null,
     };
     const createdProtocol = { id: 2, ...newProtocol, slug: 'decentralized-sequencer' };
     vi.spyOn(apiClient, 'post').mockResolvedValueOnce({

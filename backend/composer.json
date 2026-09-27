@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "protocol-platform/backend",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "type": "project",
     "description": "Community-Powered Protocol Discussion Platform API",
     "keywords": ["laravel", "framework"],

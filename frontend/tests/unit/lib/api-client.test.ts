@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { apiClient, type ApiError } from './api-client';
-import axios from 'axios';
+import { apiClient, type ApiError } from '@/lib/api-client';
 
 describe('apiClient', () => {
   beforeEach(() => {
@@ -21,7 +20,6 @@ describe('apiClient', () => {
   it('injects Bearer token into Authorization header when present in localStorage', async () => {
     localStorage.setItem('auth_token', 'test-token-xyz');
 
-    // Run interceptor handler directly
     const interceptor = (apiClient.interceptors.request as any).handlers[0];
     const config = await interceptor.fulfilled({ headers: {} });
 

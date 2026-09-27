@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { ProtocolCard } from './ProtocolCard';
+import { ProtocolCard } from '@/features/protocols/components/ProtocolCard';
 import type { Protocol } from '@/types';
 
 const mockProtocol: Protocol = {
@@ -13,40 +13,41 @@ const mockProtocol: Protocol = {
   status: 'published',
   score: 100,
   votes_count: 42,
-  average_rating: 4.8,
-  reviews_count: 5,
-  metadata: null,
+  average_rating: 4.5,
+  reviews_count: 8,
+  metadata: {},
   author: {
-    id: 1,
-    name: 'Alice',
-    email: 'alice@example.com',
-    created_at: '2026-09-24T00:00:00Z',
+    id: 2,
+    name: 'Satoshi N.',
+    email: 'satoshi@protocol.io',
+    created_at: '2026-09-01T00:00:00Z',
   },
-  created_at: '2026-09-24T00:00:00Z',
-  updated_at: '2026-09-24T00:00:00Z',
+  created_at: '2026-09-24T00:00:00.000000Z',
+  updated_at: '2026-09-24T00:00:00.000000Z',
 };
 
 describe('ProtocolCard', () => {
   it('renders protocol title and author', () => {
     const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
     expect(getByText('Consensus Layer Upgrade')).toBeDefined();
-    expect(getByText('Alice')).toBeDefined();
+    expect(getByText('Satoshi N.')).toBeDefined();
   });
 
-  it('renders the status badge', () => {
-    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
-    expect(getByText(/published/i)).toBeDefined();
-  });
-
-  it('renders the category and version', () => {
+  it('renders category and status badges', () => {
     const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
     expect(getByText('infrastructure')).toBeDefined();
-    expect(getByText('v1.0.0')).toBeDefined();
+    expect(getByText('published')).toBeDefined();
   });
 
-  it('renders votes and reviews stats', () => {
+  it('renders rating and vote counts', () => {
     const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    expect(getByText(/8 reviews/i)).toBeDefined();
     expect(getByText(/42/)).toBeDefined();
-    expect(getByText(/5/)).toBeDefined();
+  });
+
+  it('links to the correct protocol details page', () => {
+    const { getByRole } = render(<ProtocolCard protocol={mockProtocol} />);
+    const link = getByRole('link');
+    expect(link.getAttribute('href')).toBe('/protocols/consensus-layer-upgrade');
   });
 });
