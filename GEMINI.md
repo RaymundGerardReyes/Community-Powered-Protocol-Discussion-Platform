@@ -125,3 +125,13 @@
   - **Vitest:** Scans `tests/unit` and `tests/integration`, strictly excluding `tests/e2e`.
   - **Playwright:** Scans `tests/e2e`.
 
+---
+
+## 11. Repository Hygiene & External Agent Artifact Exclusion
+- **Prohibition of Third-Party Agent Artifacts:**
+  - External agent instruction files (e.g., `AGENTS.md`, `CLAUDE.md`) must never be placed or committed in repository subdirectories (`scripts/`, `frontend/`, `docker/`, `backend/`).
+  - The single source of truth for repository behavioral guidelines and architectural standards is `GEMINI.md`.
+- **Ignore List Invariant:**
+  - `.gitignore` must explicitly ignore `AGENTS.md` and `CLAUDE.md` to prevent accidental re-introduction by external tooling.
+- **Remote Hygiene & Git Tracking:**
+  - When cleaning legacy agent files, always delete them via `git rm`, synchronize package manifests, commit with `chore:`, tag with semantic versioning, and push all commits and tags to `origin/main` to guarantee remote eradication.
