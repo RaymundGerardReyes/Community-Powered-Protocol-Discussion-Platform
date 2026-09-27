@@ -68,18 +68,34 @@
 
 ---
 
-## 7. PostgreSQL Database Configuration Invariant
-- The canonical database connection for this platform is **PostgreSQL 17**:
-  ```env
-  DB_CONNECTION=pgsql
-  DB_HOST=127.0.0.1
-  DB_PORT=5433
-  DB_DATABASE=protocol_platform
-  DB_USERNAME=postgres
-  DB_PASSWORD=secret
-  ```
-- **Service Dependency:** Port 5433 connects to the PostgreSQL container `protocol_pg17`. Ensure this container is running alongside `protocol_redis` (port 6379) and `protocol_typesense` (port 8108).
-- **Strict Invariant:** Do not switch `backend/.env` away from PostgreSQL.
+## 7. Dual-Mode Environment Architecture & Zero-Docker Fallback
+- The platform supports two interchangeable operational modes:
+  1. **Containerized Mode (Docker active):**
+     Uses PostgreSQL 17 (`protocol_pg17` on port 5433) and Typesense (`protocol_typesense` on port 8108).
+     ```env
+     DB_CONNECTION=pgsql
+     DB_HOST=127.0.0.1
+     DB_PORT=5433
+     DB_DATABASE=protocol_platform
+     DB_USERNAME=postgres
+     DB_PASSWORD=secret
+     SCOUT_DRIVER=typesense
+     ```
+  2. **Standalone Host Mode (Docker offline or WSL unresponsive):**
+     Uses native pre-seeded SQLite (`database/database.sqlite`), eliminating container dependencies and TCP timeouts.
+     ```env
+     DB_CONNECTION=sqlite
+     DB_DATABASE=database/database.sqlite
+     CACHE_STORE=file
+     QUEUE_CONNECTION=sync
+     SESSION_DRIVER=file
+     SCOUT_DRIVER=null
+     ```
+- **Automated Provisioning (`scripts/provision-db.ps1`):**
+  Execute `.\scripts\provision-db.ps1 -Mode Standalone` to instantly run without Docker, or `.\scripts\provision-db.ps1 -Mode Docker` when Docker Desktop is active.
+- **Graceful Frontend Search Degradation:**
+  Frontend clients must silently degrade to Laravel `/api/v1/protocols?search=` whenever the Typesense daemon is unreachable on port 8108.
+
 
 ---
 
