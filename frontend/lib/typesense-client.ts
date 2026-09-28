@@ -2,15 +2,24 @@
 // Falls back to Laravel /protocols?search= if NEXT_PUBLIC_TYPESENSE_SEARCH_KEY is absent.
 import Typesense from 'typesense';
 
+const rawHost = process.env.NEXT_PUBLIC_TYPESENSE_HOST ?? 'localhost';
+const cleanHost = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+const port = Number(
+  process.env.NEXT_PUBLIC_TYPESENSE_PORT ?? (cleanHost.includes('typesense.net') ? 443 : 8108),
+);
+const protocol =
+  process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL ??
+  (port === 443 || cleanHost.includes('typesense.net') ? 'https' : 'http');
+
 export const typesenseClient =
   typeof process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY === 'string' &&
   process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY.length > 0
     ? new Typesense.Client({
         nodes: [
           {
-            host: process.env.NEXT_PUBLIC_TYPESENSE_HOST ?? 'localhost',
-            port: Number(process.env.NEXT_PUBLIC_TYPESENSE_PORT ?? 8108),
-            protocol: 'http',
+            host: cleanHost,
+            port,
+            protocol,
           },
         ],
         apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY,
