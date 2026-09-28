@@ -84,4 +84,26 @@ class Thread extends Model
             'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
     }
+
+    /**
+     * Get the Typesense collection schema using auto-schema detection and explicit facets.
+     *
+     * @return array<string, mixed>
+     */
+    public function typesenseCollectionSchema(): array
+    {
+        return [
+            'name' => $this->searchableAs(),
+            'fields' => [
+                ['name' => 'id', 'type' => 'string'],
+                ['name' => 'protocol_id', 'type' => 'int32', 'facet' => true],
+                ['name' => 'title', 'type' => 'string'],
+                ['name' => 'content', 'type' => 'string'],
+                ['name' => 'votes_count', 'type' => 'int32'],
+                ['name' => 'replies_count', 'type' => 'int32'],
+                ['name' => '.*', 'type' => 'auto'],
+            ],
+            'default_sorting_field' => 'votes_count',
+        ];
+    }
 }

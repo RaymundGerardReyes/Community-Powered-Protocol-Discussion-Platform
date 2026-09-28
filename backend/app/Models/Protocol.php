@@ -110,4 +110,27 @@ class Protocol extends Model
             'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
     }
+
+    /**
+     * Get the Typesense collection schema using auto-schema detection and explicit facets.
+     *
+     * @return array<string, mixed>
+     */
+    public function typesenseCollectionSchema(): array
+    {
+        return [
+            'name' => $this->searchableAs(),
+            'fields' => [
+                ['name' => 'id', 'type' => 'string'],
+                ['name' => 'title', 'type' => 'string'],
+                ['name' => 'description', 'type' => 'string'],
+                ['name' => 'category', 'type' => 'string', 'facet' => true],
+                ['name' => 'status', 'type' => 'string', 'facet' => true],
+                ['name' => 'score', 'type' => 'int32'],
+                ['name' => 'average_rating', 'type' => 'float'],
+                ['name' => '.*', 'type' => 'auto'],
+            ],
+            'default_sorting_field' => 'score',
+        ];
+    }
 }
