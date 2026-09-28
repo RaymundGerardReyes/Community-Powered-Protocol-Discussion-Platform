@@ -5,10 +5,11 @@ import type { Thread } from '@/types';
 export function ThreadCard({ thread }: { thread: Thread }) {
   return (
     <article
-      className='card-flat flex items-start gap-4 p-4 transition-all hover:-translate-y-0.5'
+      className='card-flat group relative flex items-start gap-4 p-4 transition-all hover:-translate-y-0.5'
+      style={{ cursor: 'pointer' }}
     >
-      {/* Vote column */}
-      <div className='flex flex-col items-center gap-1 shrink-0 pt-0.5'>
+      {/* Vote column - elevated above the stretched card link */}
+      <div className='flex flex-col items-center gap-1 shrink-0 pt-0.5 relative z-10'>
         <VoteButtonWrapper
           votableType='thread'
           votableId={thread.id}
@@ -19,7 +20,11 @@ export function ThreadCard({ thread }: { thread: Thread }) {
 
       {/* Content */}
       <div className='min-w-0 flex-1'>
-        <Link href={`/threads/${thread.id}`} className='group block'>
+        {/* Title with full card hit area overlay */}
+        <Link
+          href={`/threads/${thread.id}`}
+          className='block focus:outline-none after:absolute after:inset-0 after:z-0'
+        >
           <h3
             className='text-sm font-semibold leading-snug line-clamp-2 transition-colors group-hover:underline'
             style={{ color: 'var(--text-primary)' }}
@@ -30,7 +35,7 @@ export function ThreadCard({ thread }: { thread: Thread }) {
 
         {(thread.content ?? thread.body) && (
           <p
-            className='mt-1 text-xs leading-relaxed line-clamp-2'
+            className='mt-1 text-xs leading-relaxed line-clamp-2 relative z-10 pointer-events-none'
             style={{ color: 'var(--text-secondary)' }}
           >
             {thread.content ?? thread.body}
@@ -39,7 +44,7 @@ export function ThreadCard({ thread }: { thread: Thread }) {
 
         {/* Meta */}
         <div
-          className='mt-2 flex flex-wrap items-center gap-3 text-xs'
+          className='mt-2 flex flex-wrap items-center gap-3 text-xs relative z-10 pointer-events-none'
           style={{ color: 'var(--text-muted)' }}
         >
           <span className='font-medium' style={{ color: 'var(--text-secondary)' }}>

@@ -270,3 +270,24 @@
     2. `router.refresh()` to update server-rendered counters (`thread.comments_count`) and Server Component caches.
 - **Auto-Expansion on Reply Invariant:**
   - When submitting a reply to a collapsed parent comment, the parent comment must automatically expand (`setCollapsed(false)`), guaranteeing immediate visibility of the newly posted reply.
+
+---
+
+## 18. Accessible Full-Card Clickable Surface Standard (Stretched-Link Pattern)
+- **Visual Affordance vs. Hit Target Parity (Fitts's Law):**
+  - If a card element presents hover animations, elevation shifts (`hover:-translate-y-0.5`), or `cursor: pointer`, the user perceives the entire card container as the hit target.
+  - Making only the `<h3>` title text interactive violates user expectations and creates dead click zones across card padding, metadata, and descriptions.
+- **Stretched-Link Architecture over Whole-Card Wrapping:**
+  - **Never** wrap the entire semantic `<article>` in an `<a>` or `<Link>` tag. Wrapping large composite cards in links pollutes the accessibility tree by causing screen readers to announce paragraphs, badges, and timestamps as a single run-on link name. Furthermore, nesting interactive elements (like vote buttons) inside an anchor tag is invalid HTML5.
+  - **The Standard Pattern:** Keep `<article>` as the outer semantic container with `relative`. Anchor the primary navigation to the heading's `<Link>` and expand its click area to the entire container using a pseudo-element:
+    ```tsx
+    <Link href={href} className="focus:outline-none after:absolute after:inset-0 after:z-0">
+      <h3 className="group-hover:underline">{title}</h3>
+    </Link>
+    ```
+- **Interactive Sub-Control Isolation (Z-Index Stacking):**
+  - Secondary interactive elements inside the card (such as `VoteButton`, category tag links, or author profiles) must be placed on an elevated stacking context using `relative z-10`.
+  - Non-interactive metadata, descriptions, and badges should be marked `pointer-events-none` so mouse events pass transparently through to the underlying stretched link.
+- **Accessible Name Integrity:**
+  - Do not use redundant `aria-label` overrides on the stretched link that mask the natural heading text, ensuring full compatibility with automated tests and screen reader navigation.
+

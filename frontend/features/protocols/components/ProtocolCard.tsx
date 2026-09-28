@@ -12,11 +12,11 @@ const STATUS_VARIANT: Record<Protocol['status'], 'success' | 'warning' | 'danger
 export function ProtocolCard({ protocol }: { protocol: Protocol }) {
   return (
     <article
-      className='card-flat flex flex-col h-full p-5 transition-all hover:-translate-y-0.5'
+      className='card-flat group relative flex flex-col h-full p-5 transition-all hover:-translate-y-0.5'
       style={{ cursor: 'pointer' }}
     >
       {/* Header row */}
-      <div className='flex items-start justify-between gap-3 mb-3'>
+      <div className='flex items-start justify-between gap-3 mb-3 relative z-10 pointer-events-none'>
         <div className='flex flex-wrap items-center gap-1.5 min-w-0'>
           <Badge variant={STATUS_VARIANT[protocol.status]}>{protocol.status}</Badge>
           <span
@@ -34,8 +34,11 @@ export function ProtocolCard({ protocol }: { protocol: Protocol }) {
         </div>
       </div>
 
-      {/* Title */}
-      <Link href={`/protocols/${protocol.slug}`} className='group flex-1 min-w-0 block'>
+      {/* Title with full card hit area overlay */}
+      <Link
+        href={`/protocols/${protocol.slug}`}
+        className='flex-1 min-w-0 block focus:outline-none after:absolute after:inset-0 after:z-0'
+      >
         <h3
           className='text-sm font-semibold leading-snug line-clamp-2 transition-colors group-hover:underline'
           style={{ color: 'var(--text-primary)' }}
@@ -46,7 +49,7 @@ export function ProtocolCard({ protocol }: { protocol: Protocol }) {
 
       {/* Description */}
       <p
-        className='mt-2 text-xs leading-relaxed line-clamp-2'
+        className='mt-2 text-xs leading-relaxed line-clamp-2 relative z-10 pointer-events-none'
         style={{ color: 'var(--text-secondary)' }}
       >
         {protocol.description}
@@ -54,7 +57,7 @@ export function ProtocolCard({ protocol }: { protocol: Protocol }) {
 
       {/* Footer */}
       <div
-        className='mt-4 pt-3 flex items-center justify-between text-xs'
+        className='mt-4 pt-3 flex items-center justify-between text-xs relative z-10 pointer-events-none'
         style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}
       >
         <span>
