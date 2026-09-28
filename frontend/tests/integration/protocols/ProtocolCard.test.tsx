@@ -50,4 +50,18 @@ describe('ProtocolCard', () => {
     const link = getByRole('link');
     expect(link.getAttribute('href')).toBe('/protocols/consensus-layer-upgrade');
   });
+
+  it('implements accessible stretched-link overlay for full-card clickable surface', () => {
+    const { container, getByRole } = render(<ProtocolCard protocol={mockProtocol} />);
+    const article = container.querySelector('article');
+    expect(article).toHaveClass('relative');
+    expect(article).toHaveClass('group');
+    expect(article).toHaveStyle({ cursor: 'pointer' });
+
+    const link = getByRole('link');
+    expect(link.className).toContain('after:absolute');
+    expect(link.className).toContain('after:inset-0');
+    expect(link.className).toContain('after:z-0');
+  });
 });
+

@@ -52,4 +52,42 @@ describe('ThreadCard Component Integration', () => {
     expect(screen.getByText('8')).toBeInTheDocument();
     expect(screen.getByText('156')).toBeInTheDocument();
   });
+
+  it('implements accessible stretched-link overlay with isolated elevated vote controls', () => {
+    const mockThread: Thread = {
+      id: 42,
+      protocol_id: 1,
+      title: 'State Transition Verification Mechanism',
+      content: 'Discussion regarding recursive STARK verification on Ethereum L1.',
+      votes_count: 14,
+      comments_count: 8,
+      views_count: 156,
+      created_at: '2026-09-18T10:00:00Z',
+      updated_at: '2026-09-18T10:00:00Z',
+      author: {
+        id: 1,
+        name: 'Vitalik B.',
+        email: 'vitalik@protocol.io',
+        created_at: '2026-09-01T00:00:00Z',
+      },
+    };
+
+    const { container } = renderWithClient(<ThreadCard thread={mockThread} />);
+    const article = container.querySelector('article');
+    expect(article).toHaveClass('relative');
+    expect(article).toHaveClass('group');
+    expect(article).toHaveStyle({ cursor: 'pointer' });
+
+    const titleLink = screen.getByRole('link', {
+      name: 'State Transition Verification Mechanism',
+    });
+    expect(titleLink.className).toContain('after:absolute');
+    expect(titleLink.className).toContain('after:inset-0');
+    expect(titleLink.className).toContain('after:z-0');
+
+    // Vote button container must be elevated to relative z-10
+    const voteColumn = container.querySelector('.relative.z-10');
+    expect(voteColumn).toBeInTheDocument();
+  });
 });
+
