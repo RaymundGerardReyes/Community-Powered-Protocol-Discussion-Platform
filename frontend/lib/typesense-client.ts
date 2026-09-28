@@ -2,30 +2,59 @@
 // Falls back to Laravel /protocols?search= if NEXT_PUBLIC_TYPESENSE_SEARCH_KEY is absent.
 import Typesense from 'typesense';
 
-const rawHost = process.env.NEXT_PUBLIC_TYPESENSE_HOST ?? 'localhost';
-const cleanHost = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-const port = Number(
-  process.env.NEXT_PUBLIC_TYPESENSE_PORT ?? (cleanHost.includes('typesense.net') ? 443 : 8108),
-);
-const protocol =
-  process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL ??
-  (port === 443 || cleanHost.includes('typesense.net') ? 'https' : 'http');
+export interface TypesenseResolvedConfig {
+  host: string;
+  port: number;
+  protocol: string;
+  apiKey: string | undefined;
+  isValid: boolean;
+}
 
-export const typesenseClient =
-  typeof process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY === 'string' &&
-  process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY.length > 0
-    ? new Typesense.Client({
-        nodes: [
-          {
-            host: cleanHost,
-            port,
-            protocol,
-          },
-        ],
-        apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY,
-        connectionTimeoutSeconds: 2,
-      })
-    : null;
+export function resolveTypesenseConfig(env: {
+  host?: string;
+  port?: string | number;
+  protocol?: string;
+  apiKey?: string;
+}): TypesenseResolvedConfig {
+  const rawHost = env.host ?? 'localhost';
+  const cleanHost = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const port = Number(
+    env.port ?? (cleanHost.includes('typesense.net') ? 443 : 8108),
+  );
+  const protocol =
+    env.protocol ??
+    (port === 443 || cleanHost.includes('typesense.net') ? 'https' : 'http');
+  const apiKey = env.apiKey;
+
+  return {
+    host: cleanHost,
+    port,
+    protocol,
+    apiKey,
+    isValid: typeof apiKey === 'string' && apiKey.length > 0,
+  };
+}
+
+const activeConfig = resolveTypesenseConfig({
+  host: process.env.NEXT_PUBLIC_TYPESENSE_HOST,
+  port: process.env.NEXT_PUBLIC_TYPESENSE_PORT,
+  protocol: process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL,
+  apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY,
+});
+
+export const typesenseClient = activeConfig.isValid
+  ? new Typesense.Client({
+      nodes: [
+        {
+          host: activeConfig.host,
+          port: activeConfig.port,
+          protocol: activeConfig.protocol,
+        },
+      ],
+      apiKey: activeConfig.apiKey!,
+      connectionTimeoutSeconds: 2,
+    })
+  : null;
 
 export async function searchProtocols(query: string) {
   if (!typesenseClient) return null; // caller falls back to Laravel
