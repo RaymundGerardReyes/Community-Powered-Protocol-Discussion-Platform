@@ -34,7 +34,7 @@ describe('Typesense Collections API Compliance', function () {
         $schema = $protocol->typesenseCollectionSchema();
 
         expect($schema)->toHaveKeys(['name', 'fields', 'default_sorting_field']);
-        expect($schema['name'])->toBe('protocols');
+        expect($schema['name'])->toBe('protocol');
         expect($schema['fields'])->toBeArray()->not->toBeEmpty();
     });
 

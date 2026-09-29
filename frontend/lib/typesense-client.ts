@@ -96,7 +96,7 @@ export async function searchProtocols(paramsOrQuery: string | ProtocolSearchPara
     }
 
     return await typesenseClient
-      .collections('protocols')
+      .collections('protocol')
       .documents()
       .search(searchOptions);
   } catch {
