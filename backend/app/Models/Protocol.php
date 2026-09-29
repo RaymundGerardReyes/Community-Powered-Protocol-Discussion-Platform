@@ -113,6 +113,7 @@ class Protocol extends Model
 
         return [
             'id' => (string) $this->id,
+            'slug' => (string) ($this->slug ?: \Illuminate\Support\Str::slug($this->title)),
             'user_id' => (int) ($this->user_id ?? 0),
             'author_id' => (int) ($this->user_id ?? 0),
             'author' => $authorName,
@@ -152,6 +153,7 @@ class Protocol extends Model
             'name' => $this->searchableAs(),
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
+                ['name' => 'slug', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'user_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author', 'type' => 'string', 'facet' => true, 'optional' => true],

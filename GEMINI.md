@@ -341,4 +341,17 @@
     - `X-Database-Target`: resolved database filename or database name
   - Developers can verify the exact runtime path anytime via `php artisan debug:routing-path`.
 
+---
+
+## 21. Typesense-Native Direct Document Hydration & Zero-Database Decoupling Standard
+- **Direct Document Hydration over Secondary SQL Lookups:**
+  - When `SCOUT_DRIVER=typesense` (or `ty`), repositories (`ProtocolRepository`, `ThreadRepository`) must hydrate Eloquent models directly from Typesense document hits rather than querying the SQL database with `whereIn('id', $ids)`.
+  - Primary models and relational associations (`user`, `threads`, `reviews`) must be constructed in memory with full relational fidelity, resulting in **0 SQL queries** executed on the local database for catalog, pagination, detail lookups, and top-voted listings.
+- **Slug Indexing Parity:**
+  - `toSearchableArray()` on all slugged models (`Protocol`, `Thread`) MUST explicitly include `slug` alongside titles and IDs:
+    `'slug' => (string) ($this->slug ?: Str::slug($this->title))`
+  - Typesense schemas must declare `['name' => 'slug', 'type' => 'string', 'facet' => true, 'optional' => true]`.
+- **POSIX Shell Compatibility for Provisioning Scripts:**
+  - In addition to PowerShell scripts (`scripts/provision-db.ps1`), provide POSIX-compatible shell scripts (`scripts/provision-db.sh`) to prevent backslash path escape errors in Git Bash (MINGW64) and Linux environments.
+
 

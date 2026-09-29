@@ -51,6 +51,67 @@ class RoutingPathTest extends TestCase
             ->assertJsonStructure(['message']);
     }
 
+    public function test_protocols_endpoint_hydrates_directly_from_typesense_documents_without_sql_queries(): void
+    {
+        config(['scout.driver' => 'typesense']);
+
+        $mockDocuments = $this->createMock(\Typesense\Documents::class);
+        $mockDocuments->expects($this->any())
+            ->method('search')
+            ->willReturn([
+                'found' => 1,
+                'hits' => [
+                    [
+                        'document' => [
+                            'id' => '42',
+                            'title' => 'Live Typesense Protocol',
+                            'slug' => 'live-typesense-protocol',
+                            'description' => 'Directly from Typesense Cloud',
+                            'category' => 'DeFi',
+                            'status' => 'published',
+                            'score' => 99,
+                            'votes_count' => 99,
+                            'reviews_count' => 5,
+                            'average_rating' => 4.8,
+                            'author' => 'Typesense Validator',
+                            'created_at' => 1727654400,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $mockCollection = $this->createMock(\Typesense\Collection::class);
+        $mockCollection->documents = $mockDocuments;
+
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->willReturn($mockCollection);
+
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $this->app->instance(\Typesense\Client::class, $client);
+
+        // Count database queries - should be 0 because we hydrate directly from Typesense
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+
+        $response = $this->getJson('/api/v1/protocols');
+
+        $response->assertStatus(200)
+            ->assertHeader('X-Search-Driver', 'typesense')
+            ->assertHeader('X-Data-Source', 'typesense')
+            ->assertJsonPath('data.0.title', 'Live Typesense Protocol')
+            ->assertJsonPath('data.0.slug', 'live-typesense-protocol')
+            ->assertJsonPath('data.0.author.name', 'Typesense Validator');
+
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        $this->assertCount(0, $queries, 'Protocols endpoint should not execute any SQL queries when Typesense is active');
+    }
+
     public function test_threads_endpoint_identifies_database_headers(): void
     {
         config(['scout.driver' => 'null']);

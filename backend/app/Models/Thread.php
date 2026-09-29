@@ -89,6 +89,7 @@ class Thread extends Model
         return [
             'id' => (string) $this->id,
             'protocol_id' => (string) $this->protocol_id,
+            'slug' => (string) ($this->slug ?: \Illuminate\Support\Str::slug($this->title)),
             'user_id' => (int) ($this->user_id ?? 0),
             'author_id' => (int) ($this->user_id ?? 0),
             'author' => $authorName,
@@ -132,6 +133,7 @@ class Thread extends Model
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
                 ['name' => 'protocol_id', 'type' => 'string', 'facet' => true],
+                ['name' => 'slug', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'user_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author', 'type' => 'string', 'facet' => true, 'optional' => true],
