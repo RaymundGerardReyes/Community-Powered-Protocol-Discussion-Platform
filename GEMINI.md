@@ -315,5 +315,8 @@
 - **Foreign Key & Document ID String Casting Invariant:**
   - All primary keys (`id`) and foreign key references (e.g., `protocol_id`) in `toSearchableArray()` MUST be explicitly cast to string `(string) $this->protocol_id`.
   - In `typesenseCollectionSchema()`, foreign key fields must be declared as `['name' => 'protocol_id', 'type' => 'string', 'facet' => true]` to maintain strict type parity with document string identifiers.
+- **Typesense-First Catalog Routing Invariant:**
+  - When `config('scout.driver') === 'typesense'`, repositories MUST query Typesense first for all browsing, filtering, and sorting (`q: '*'`, `filter_by: ...`, `sort_by: ...`), hydrating models by IDs preserving rank order.
+  - If the Typesense API is unreachable or returns an error, the repository must immediately fall back to SQL execution without bubbling 500 exceptions to the client.
 
 
