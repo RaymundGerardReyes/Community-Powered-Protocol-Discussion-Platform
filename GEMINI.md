@@ -312,5 +312,8 @@
   - In `typesenseCollectionSchema()`, all secondary or emergent metric fields must declare `'optional' => true` to guarantee schema compatibility across different cluster creation methods.
 - **Cloud Credential ASCII Sanitization Invariant:**
   - Hostnames, node URLs, and API keys retrieved from `.env` must be sanitized against non-printable Unicode characters, non-breaking spaces (`\xC2\xA0`), zero-width spaces, and trailing quotes/slashes before being passed to HTTP clients or DNS resolvers (`preg_replace('/[^\x21-\x7E]/', '', ...)`).
+- **Foreign Key & Document ID String Casting Invariant:**
+  - All primary keys (`id`) and foreign key references (e.g., `protocol_id`) in `toSearchableArray()` MUST be explicitly cast to string `(string) $this->protocol_id`.
+  - In `typesenseCollectionSchema()`, foreign key fields must be declared as `['name' => 'protocol_id', 'type' => 'string', 'facet' => true]` to maintain strict type parity with document string identifiers.
 
 
