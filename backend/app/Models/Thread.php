@@ -67,15 +67,31 @@ class Thread extends Model
     }
 
     /**
+     * Modify the query used to retrieve models when making all of the models searchable.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function makeAllSearchableUsing(Builder $query): Builder
+    {
+        return $query->with(['user', 'protocol']);
+    }
+
+    /**
      * Get the indexable data array for Scout.
      *
      * @return array<string, mixed>
      */
     public function toSearchableArray(): array
     {
+        $authorName = $this->user ? $this->user->name : 'Anonymous';
+
         return [
             'id' => (string) $this->id,
             'protocol_id' => (int) $this->protocol_id,
+            'user_id' => (int) ($this->user_id ?? 0),
+            'author_id' => (int) ($this->user_id ?? 0),
+            'author' => $authorName,
             'title' => $this->title,
             'body' => $this->content,
             'content' => $this->content,
@@ -111,6 +127,9 @@ class Thread extends Model
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
                 ['name' => 'protocol_id', 'type' => 'int32', 'facet' => true],
+                ['name' => 'user_id', 'type' => 'int32', 'optional' => true],
+                ['name' => 'author_id', 'type' => 'int32', 'optional' => true],
+                ['name' => 'author', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'title', 'type' => 'string'],
                 ['name' => 'body', 'type' => 'string'],
                 ['name' => 'content', 'type' => 'string'],

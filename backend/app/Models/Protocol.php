@@ -92,14 +92,30 @@ class Protocol extends Model
     }
 
     /**
+     * Modify the query used to retrieve models when making all of the models searchable.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function makeAllSearchableUsing(Builder $query): Builder
+    {
+        return $query->with('user');
+    }
+
+    /**
      * Get the indexable data array for Scout.
      *
      * @return array<string, mixed>
      */
     public function toSearchableArray(): array
     {
+        $authorName = $this->user ? $this->user->name : 'Anonymous';
+
         return [
             'id' => (string) $this->id,
+            'user_id' => (int) ($this->user_id ?? 0),
+            'author_id' => (int) ($this->user_id ?? 0),
+            'author' => $authorName,
             'title' => $this->title,
             'description' => $this->description,
             'category' => $this->category,
@@ -135,6 +151,9 @@ class Protocol extends Model
             'name' => $this->searchableAs(),
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
+                ['name' => 'user_id', 'type' => 'int32', 'optional' => true],
+                ['name' => 'author_id', 'type' => 'int32', 'optional' => true],
+                ['name' => 'author', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'title', 'type' => 'string'],
                 ['name' => 'description', 'type' => 'string'],
                 ['name' => 'category', 'type' => 'string', 'facet' => true],
