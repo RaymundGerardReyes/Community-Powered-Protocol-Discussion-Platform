@@ -19,11 +19,24 @@ class ThreadRepository implements ThreadRepositoryInterface
             ->with('user');
 
         if (! empty($filters['search'])) {
-            $searchTerm = '%'.$filters['search'].'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'like', $searchTerm)
-                    ->orWhere('content', 'like', $searchTerm);
-            });
+            $usedScout = false;
+            if (config('scout.driver') === 'typesense') {
+                try {
+                    $ids = Thread::search($filters['search'])->keys()->all();
+                    $query->whereIn('id', $ids);
+                    $usedScout = true;
+                } catch (\Throwable) {
+                    $usedScout = false;
+                }
+            }
+
+            if (! $usedScout) {
+                $searchTerm = '%'.mb_strtolower($filters['search']).'%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(content) LIKE ?', [$searchTerm]);
+                });
+            }
         }
 
         $query->sortedBy($filters['sort'] ?? null);
