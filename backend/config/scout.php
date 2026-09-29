@@ -187,11 +187,26 @@ return [
             $protocol = ($port === '443' || $isCloud) ? 'https' : 'http';
         }
 
-        $apiKey = trim((string) (env('TYPESENSE_API_KEY') ?: env('TYPESENSE_ADMIN_API_KEY', 'xyz')), " \t\n\r\0\x0B\"'");
+        $adminKey = env('TYPESENSE_ADMIN_API_KEY');
+        $regularKey = env('TYPESENSE_API_KEY');
+
+        if (!empty($adminKey) && $adminKey !== 'xyz') {
+            $selectedKey = $adminKey;
+            $keySource = 'TYPESENSE_ADMIN_API_KEY';
+        } elseif (!empty($regularKey) && $regularKey !== 'xyz') {
+            $selectedKey = $regularKey;
+            $keySource = 'TYPESENSE_API_KEY';
+        } else {
+            $selectedKey = $adminKey ?: ($regularKey ?: 'xyz');
+            $keySource = 'default (xyz)';
+        }
+
+        $apiKey = trim((string) $selectedKey, " \t\n\r\0\x0B\"'");
 
         return [
             'client-settings' => [
                 'api_key' => $apiKey,
+                'api_key_source' => $keySource,
                 'nodes' => [
                     [
                         'host' => $cleanHost,

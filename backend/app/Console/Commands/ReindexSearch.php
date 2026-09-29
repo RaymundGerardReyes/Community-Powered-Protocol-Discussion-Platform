@@ -48,8 +48,8 @@ class ReindexSearch extends Command
             $protocol = $node['protocol'] ?? 'http';
             $apiKey = config('scout.typesense.client-settings.api_key');
 
-            $this->line("Target Node: <comment>{$protocol}://{$host}:{$port}</comment>");
-            $this->line("API Key: " . (empty($apiKey) || $apiKey === 'xyz' ? '<fg=red>Not configured</>' : '<fg=green>Configured (' . strlen($apiKey) . ' chars)</>'));
+            $keySource = config('scout.typesense.client-settings.api_key_source', 'TYPESENSE_API_KEY');
+            $this->line("API Key: " . (empty($apiKey) || $apiKey === 'xyz' ? '<fg=red>Not configured (using placeholder "xyz")</>' : "<fg=green>Configured via {$keySource} (" . strlen($apiKey) . " chars)</>"));
 
             if ($host !== 'localhost' && $host !== '127.0.0.1') {
                 $resolvedIp = gethostbyname($host);
