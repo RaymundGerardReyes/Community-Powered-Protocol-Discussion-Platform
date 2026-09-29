@@ -20,9 +20,11 @@ class ProtocolRepository implements ProtocolRepositoryInterface
     public function __construct(
         protected ?TypesenseClient $typesense = null
     ) {
-        if ($this->typesense === null && app()->bound(TypesenseClient::class)) {
-            $this->typesense = app(TypesenseClient::class);
-        }
+    }
+
+    protected function getTypesense(): ?TypesenseClient
+    {
+        return $this->typesense ?? (app()->bound(TypesenseClient::class) ? app(TypesenseClient::class) : null);
     }
 
     public function paginateWithFilters(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -32,7 +34,8 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
         // 1. Typesense-first catalog discovery when driver is active
         if ($isTypesense) {
-            if ($this->typesense === null) {
+            $typesense = $this->getTypesense();
+            if ($typesense === null) {
                 abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
             }
 
@@ -68,7 +71,7 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     'per_page' => $perPage,
                 ];
 
-                $results = $this->typesense->collections('protocol')->documents()->search($searchParams);
+                $results = $typesense->collections['protocol']->documents->search($searchParams);
 
                 $found = (int) ($results['found'] ?? 0);
                 $hits = $results['hits'] ?? [];
@@ -149,12 +152,13 @@ class ProtocolRepository implements ProtocolRepositoryInterface
         $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
 
         if ($isTypesense) {
-            if ($this->typesense === null) {
+            $typesense = $this->getTypesense();
+            if ($typesense === null) {
                 abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
             }
 
             try {
-                $results = $this->typesense->collections('protocol')->documents()->search([
+                $results = $typesense->collections['protocol']->documents->search([
                     'q' => '*',
                     'query_by' => 'title,description',
                     'filter_by' => 'status:=published',

@@ -19,9 +19,11 @@ class ThreadRepository implements ThreadRepositoryInterface
     public function __construct(
         protected ?TypesenseClient $typesense = null
     ) {
-        if ($this->typesense === null && app()->bound(TypesenseClient::class)) {
-            $this->typesense = app(TypesenseClient::class);
-        }
+    }
+
+    protected function getTypesense(): ?TypesenseClient
+    {
+        return $this->typesense ?? (app()->bound(TypesenseClient::class) ? app(TypesenseClient::class) : null);
     }
 
     public function paginateForProtocol(int $protocolId, array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -31,7 +33,8 @@ class ThreadRepository implements ThreadRepositoryInterface
 
         // 1. Typesense-first search when driver is active
         if ($isTypesense) {
-            if ($this->typesense === null) {
+            $typesense = $this->getTypesense();
+            if ($typesense === null) {
                 abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
             }
 
@@ -53,7 +56,7 @@ class ThreadRepository implements ThreadRepositoryInterface
                     'per_page' => $perPage,
                 ];
 
-                $results = $this->typesense->collections('threads')->documents()->search($searchParams);
+                $results = $typesense->collections['threads']->documents->search($searchParams);
 
                 $found = (int) ($results['found'] ?? 0);
                 $hits = $results['hits'] ?? [];

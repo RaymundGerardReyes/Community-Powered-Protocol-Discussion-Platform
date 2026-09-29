@@ -32,9 +32,21 @@ class RoutingPathTest extends TestCase
     {
         config(['scout.driver' => 'typesense']);
 
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->willThrowException(new \RuntimeException('Connection refused to Typesense cluster'));
+
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $this->app->instance(\Typesense\Client::class, $client);
+
         $response = $this->getJson('/api/v1/protocols');
 
-        // With mock/unconfigured client in testing, strict mode aborts 503 instead of silently pulling from database
         $response->assertStatus(503)
             ->assertJsonStructure(['message']);
     }
