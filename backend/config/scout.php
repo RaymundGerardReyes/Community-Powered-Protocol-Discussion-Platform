@@ -171,59 +171,50 @@ return [
     |
     */
 
-    'typesense' => [
-        'client-settings' => [
-            'api_key' => env('TYPESENSE_API_KEY', 'xyz'),
-            'nodes' => [
-                [
-                    'host' => env('TYPESENSE_HOST', 'localhost'),
-                    'port' => env('TYPESENSE_PORT', '8108'),
-                    'path' => env('TYPESENSE_PATH', ''),
-                    'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+    'typesense' => (function () {
+        $rawHost = trim((string) env('TYPESENSE_HOST', 'localhost'), " \t\n\r\0\x0B\"'");
+        $rawHost = preg_replace('#^https?://#i', '', rtrim($rawHost, '/'));
+
+        // Handle possible host:port formats like mycluster.typesense.net:443
+        $parts = explode(':', $rawHost);
+        $cleanHost = trim($parts[0], " \t\n\r\0\x0B\"'");
+        $embeddedPort = $parts[1] ?? null;
+
+        $isCloud = str_contains($cleanHost, 'typesense.net');
+        $port = (string) (env('TYPESENSE_PORT') ?: ($embeddedPort ?: ($isCloud ? '443' : '8108')));
+        $protocol = env('TYPESENSE_PROTOCOL');
+        if (empty($protocol) || ($protocol === 'http' && ($port === '443' || $isCloud))) {
+            $protocol = ($port === '443' || $isCloud) ? 'https' : 'http';
+        }
+
+        $apiKey = trim((string) (env('TYPESENSE_API_KEY') ?: env('TYPESENSE_ADMIN_API_KEY', 'xyz')), " \t\n\r\0\x0B\"'");
+
+        return [
+            'client-settings' => [
+                'api_key' => $apiKey,
+                'nodes' => [
+                    [
+                        'host' => $cleanHost,
+                        'port' => $port,
+                        'path' => env('TYPESENSE_PATH', ''),
+                        'protocol' => $protocol,
+                    ],
                 ],
+                'nearest_node' => [
+                    'host' => $cleanHost,
+                    'port' => $port,
+                    'path' => env('TYPESENSE_PATH', ''),
+                    'protocol' => $protocol,
+                ],
+                'connection_timeout_seconds' => env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 5),
+                'healthcheck_interval_seconds' => env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
+                'num_retries' => env('TYPESENSE_NUM_RETRIES', 3),
+                'retry_interval_seconds' => env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
             ],
-            'nearest_node' => [
-                'host' => env('TYPESENSE_HOST', 'localhost'),
-                'port' => env('TYPESENSE_PORT', '8108'),
-                'path' => env('TYPESENSE_PATH', ''),
-                'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
-            ],
-            'connection_timeout_seconds' => env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 2),
-            'healthcheck_interval_seconds' => env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
-            'num_retries' => env('TYPESENSE_NUM_RETRIES', 3),
-            'retry_interval_seconds' => env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
-        ],
-        // 'max_total_results' => env('TYPESENSE_MAX_TOTAL_RESULTS', 1000),
-        'model-settings' => [
-            // User::class => [
-            //     'collection-schema' => [
-            //         'fields' => [
-            //             [
-            //                 'name' => 'id',
-            //                 'type' => 'string',
-            //             ],
-            //             [
-            //                 'name' => 'name',
-            //                 'type' => 'string',
-            //             ],
-            //             [
-            //                 'name' => 'created_at',
-            //                 'type' => 'int64',
-            //             ],
-            //         ],
-            //         'default_sorting_field' => 'created_at',
-            //     ],
-            //     'search-parameters' => [
-            //         'query_by' => 'name'
-            //     ],
-            //     'embedding' => [
-            //         'attribute' => 'embedding',
-            //         'dimensions' => 1536,
-            //     ],
-            // ],
-        ],
-        'import_action' => env('TYPESENSE_IMPORT_ACTION', 'upsert'),
-    ],
+            'model-settings' => [],
+            'import_action' => env('TYPESENSE_IMPORT_ACTION', 'upsert'),
+        ];
+    })(),
 
     /*
     |--------------------------------------------------------------------------

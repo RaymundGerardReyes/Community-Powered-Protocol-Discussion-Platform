@@ -48,7 +48,7 @@ describe('typesense-client', () => {
         protocol: 'http',
         apiKey: 'local-key',
       });
-      expect(config.host).toBe('127.0.0.1:8108');
+      expect(config.host).toBe('127.0.0.1');
       expect(config.port).toBe(8108);
       expect(config.protocol).toBe('http');
       expect(config.isValid).toBe(true);

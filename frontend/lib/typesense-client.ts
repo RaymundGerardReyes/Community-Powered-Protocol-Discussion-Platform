@@ -16,15 +16,18 @@ export function resolveTypesenseConfig(env: {
   protocol?: string;
   apiKey?: string;
 }): TypesenseResolvedConfig {
-  const rawHost = env.host ?? 'localhost';
-  const cleanHost = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const raw = (env.host ?? 'localhost').trim().replace(/['"]/g, '');
+  const noProto = raw.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const [cleanHost, embeddedPort] = noProto.split(':');
+
+  const isCloud = cleanHost.includes('typesense.net');
   const port = Number(
-    env.port ?? (cleanHost.includes('typesense.net') ? 443 : 8108),
+    env.port ?? (embeddedPort ? Number(embeddedPort) : (isCloud ? 443 : 8108)),
   );
   const protocol =
     env.protocol ??
-    (port === 443 || cleanHost.includes('typesense.net') ? 'https' : 'http');
-  const apiKey = env.apiKey;
+    (port === 443 || isCloud ? 'https' : 'http');
+  const apiKey = env.apiKey ? env.apiKey.trim().replace(/['"]/g, '') : undefined;
 
   return {
     host: cleanHost,
