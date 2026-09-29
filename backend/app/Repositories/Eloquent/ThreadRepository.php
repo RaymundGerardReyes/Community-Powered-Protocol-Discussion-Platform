@@ -53,7 +53,7 @@ class ThreadRepository implements ThreadRepositoryInterface
                     'per_page' => $perPage,
                 ];
 
-                $results = $this->typesense->collections['threads']->documents->search($searchParams);
+                $results = $this->typesense->collections('threads')->documents()->search($searchParams);
 
                 $found = (int) ($results['found'] ?? 0);
                 $hits = $results['hits'] ?? [];

@@ -68,7 +68,7 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     'per_page' => $perPage,
                 ];
 
-                $results = $this->typesense->collections['protocol']->documents->search($searchParams);
+                $results = $this->typesense->collections('protocol')->documents()->search($searchParams);
 
                 $found = (int) ($results['found'] ?? 0);
                 $hits = $results['hits'] ?? [];
@@ -154,7 +154,7 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             }
 
             try {
-                $results = $this->typesense->collections['protocol']->documents->search([
+                $results = $this->typesense->collections('protocol')->documents()->search([
                     'q' => '*',
                     'query_by' => 'title,description',
                     'filter_by' => 'status:=published',

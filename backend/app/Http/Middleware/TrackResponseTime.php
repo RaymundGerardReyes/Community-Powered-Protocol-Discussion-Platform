@@ -29,10 +29,17 @@ class TrackResponseTime
         $driver = (string) config('scout.driver', 'null');
         $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
 
+        $dbConn = (string) config('database.default', 'sqlite');
+        $dbTarget = $dbConn === 'sqlite'
+            ? basename((string) config("database.connections.sqlite.database", 'database.sqlite'))
+            : (string) config("database.connections.{$dbConn}.database", 'unknown');
+
         $response->headers->set('X-Response-Time', "{$durationMs}ms");
         $response->headers->set('Server-Timing', "app;dur={$durationMs};desc=\"Laravel Execution\"");
         $response->headers->set('X-Search-Driver', $driver);
         $response->headers->set('X-Data-Source', $isTypesense ? 'typesense' : 'database');
+        $response->headers->set('X-Database-Connection', $dbConn);
+        $response->headers->set('X-Database-Target', $dbTarget);
 
         return $response;
     }

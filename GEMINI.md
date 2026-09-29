@@ -325,4 +325,20 @@
     `$client->collections['collection_name']->documents->search(...)`
   - Never call `$client->collections('name')->documents()->search(...)`, which is the JavaScript/TypeScript SDK syntax and throws `Call to undefined method Typesense\Client::collections()`.
 
+---
+
+## 20. Dual-Engine Observability & Zero-Secret SQLite Fallback Standard
+- **Laravel Default Connection Invariant:**
+  - In Laravel 11, when `DB_CONNECTION` is omitted or removed from `.env`, Laravel's configuration (`config/database.php`) automatically defaults to `'sqlite'` pointing to `database/database.sqlite`.
+  - If `database/database.sqlite` exists on disk with pre-seeded data, queries succeed without any container or `.env` database credentials.
+- **Frontend Architecture Boundary:**
+  - The Next.js frontend has zero direct connection to SQLite, PostgreSQL, or backend service drivers. All server-side components (RSC) and client hooks interact with the backend exclusively through HTTP REST API requests (`/api/v1/*`).
+- **Response Header Observability Invariant:**
+  - Every API response must emit:
+    - `X-Search-Driver`: `typesense` or `null`
+    - `X-Data-Source`: `typesense` or `database`
+    - `X-Database-Connection`: `sqlite` or `pgsql`
+    - `X-Database-Target`: resolved database filename or database name
+  - Developers can verify the exact runtime path anytime via `php artisan debug:routing-path`.
+
 
