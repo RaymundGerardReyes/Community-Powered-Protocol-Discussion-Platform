@@ -14,6 +14,8 @@ class ProtocolLifecycleE2ETest extends TestCase
 
     public function test_complete_protocol_governance_and_discussion_lifecycle(): void
     {
+        config(['scout.driver' => 'null']);
+
         // -------------------------------------------------------------
         // Phase 1: User Onboarding & Personas
         // -------------------------------------------------------------
@@ -22,6 +24,70 @@ class ProtocolLifecycleE2ETest extends TestCase
         $reviewerB = User::factory()->create(['name' => 'Charlie Reviewer', 'email' => 'charlie@audit.test']);
         $contributor = User::factory()->create(['name' => 'Dave Contributor', 'email' => 'dave@community.test']);
         $voter = User::factory()->create(['name' => 'Eve Voter', 'email' => 'eve@voter.test']);
+
+        $published = false;
+        $mockProtocolDocs = $this->createMock(\Typesense\Documents::class);
+        $mockProtocolDocs->expects($this->any())
+            ->method('search')
+            ->willReturnCallback(function () use (&$published, $author) {
+                if (! $published) {
+                    return ['found' => 0, 'hits' => []];
+                }
+                return [
+                    'found' => 1,
+                    'hits' => [
+                        [
+                            'document' => [
+                                'id' => '1',
+                                'title' => 'Decentralized Sequencer Coordination Standard',
+                                'slug' => 'decentralized-sequencer-coordination-standard',
+                                'category' => 'Layer 2',
+                                'status' => 'published',
+                                'reviews_count' => 2,
+                                'average_rating' => 4.0,
+                                'author' => $author->name,
+                            ],
+                        ],
+                    ],
+                ];
+            });
+
+        $mockThreadDocs = $this->createMock(\Typesense\Documents::class);
+        $mockThreadDocs->expects($this->any())
+            ->method('search')
+            ->willReturn([
+                'found' => 1,
+                'hits' => [
+                    [
+                        'document' => [
+                            'id' => '1',
+                            'protocol_id' => 1,
+                            'title' => 'Sequencer Latency Benchmarks',
+                            'replies_count' => 3,
+                            'author' => 'Dave Contributor',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $protocolCollection = $this->createMock(\Typesense\Collection::class);
+        $protocolCollection->documents = $mockProtocolDocs;
+
+        $threadCollection = $this->createMock(\Typesense\Collection::class);
+        $threadCollection->documents = $mockThreadDocs;
+
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->willReturnCallback(fn ($name) => $name === 'threads' ? $threadCollection : $protocolCollection);
+
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $this->app->instance(\Typesense\Client::class, $client);
 
         // -------------------------------------------------------------
         // Phase 2: Protocol Authoring, Updating, and Publishing
@@ -73,6 +139,8 @@ class ProtocolLifecycleE2ETest extends TestCase
 
         $publishResponse->assertStatus(200)
             ->assertJsonPath('data.status', 'published');
+
+        $published = true;
 
         // 6. Protocol is now visible on public listing
         $publicListAfterPublish = $this->getJson('/api/v1/protocols');

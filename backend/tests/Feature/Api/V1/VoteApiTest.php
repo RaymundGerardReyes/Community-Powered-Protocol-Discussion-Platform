@@ -1,164 +1,182 @@
 <?php
 
+namespace Tests\Feature\Api\V1;
+
 use App\Models\Comment;
 use App\Models\Protocol;
 use App\Models\Thread;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-uses(RefreshDatabase::class);
+class VoteApiTest extends TestCase
+{
+    use RefreshDatabase;
 
-test('authenticated user can upvote a protocol and update its score', function () {
-    $user = User::factory()->create();
-    $protocol = Protocol::factory()->create([
-        'votes_count' => 0,
-        'score' => 0,
-        'reviews_count' => 0,
-    ]);
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['scout.driver' => 'null']);
+    }
 
-    $response = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
+    public function test_authenticated_user_can_upvote_a_protocol_and_update_its_score(): void
+    {
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create([
+            'votes_count' => 0,
+            'score' => 0,
+            'reviews_count' => 0,
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'protocol',
+                'votable_id' => $protocol->id,
+                'value' => 1,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'action' => 'created',
+                    'current_vote' => 1,
+                    'votes_count' => 1,
+                ],
+            ]);
+
+        $protocol->refresh();
+        $this->assertSame(1, $protocol->votes_count);
+        $this->assertSame(10, $protocol->score);
+    }
+
+    public function test_casting_identical_vote_toggles_off_and_removes_the_vote(): void
+    {
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create(['votes_count' => 0]);
+
+        // Initial upvote
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'protocol',
+                'votable_id' => $protocol->id,
+                'value' => 1,
+            ])->assertStatus(200);
+
+        $this->assertSame(1, $protocol->fresh()->votes_count);
+
+        // Toggle off by clicking upvote again
+        $toggleResponse = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'protocol',
+                'votable_id' => $protocol->id,
+                'value' => 1,
+            ]);
+
+        $toggleResponse->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'action' => 'removed',
+                    'current_vote' => 0,
+                    'votes_count' => 0,
+                ],
+            ]);
+
+        $this->assertSame(0, $protocol->fresh()->votes_count);
+    }
+
+    public function test_user_can_flip_vote_from_upvote_to_downvote(): void
+    {
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create(['votes_count' => 0]);
+
+        // Upvote
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'protocol',
+                'votable_id' => $protocol->id,
+                'value' => 1,
+            ])->assertStatus(200);
+
+        $this->assertSame(1, $protocol->fresh()->votes_count);
+
+        // Flip to downvote (-1)
+        $flipResponse = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'protocol',
+                'votable_id' => $protocol->id,
+                'value' => -1,
+            ]);
+
+        $flipResponse->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'action' => 'updated',
+                    'current_vote' => -1,
+                    'votes_count' => -1,
+                ],
+            ]);
+
+        $this->assertSame(-1, $protocol->fresh()->votes_count);
+    }
+
+    public function test_user_can_cast_vote_on_a_thread(): void
+    {
+        $user = User::factory()->create();
+        $thread = Thread::factory()->create(['votes_count' => 0]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'thread',
+                'votable_id' => $thread->id,
+                'value' => 1,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'action' => 'created',
+                    'current_vote' => 1,
+                    'votes_count' => 1,
+                ],
+            ]);
+
+        $this->assertSame(1, $thread->fresh()->votes_count);
+    }
+
+    public function test_user_can_cast_vote_on_a_comment(): void
+    {
+        $user = User::factory()->create();
+        $comment = Comment::factory()->create(['votes_count' => 0]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/votes', [
+                'votable_type' => 'comment',
+                'votable_id' => $comment->id,
+                'value' => 1,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'action' => 'created',
+                    'current_vote' => 1,
+                    'votes_count' => 1,
+                ],
+            ]);
+
+        $this->assertSame(1, $comment->fresh()->votes_count);
+    }
+
+    public function test_unauthenticated_user_cannot_vote(): void
+    {
+        $protocol = Protocol::factory()->create();
+
+        $response = $this->postJson('/api/v1/votes', [
             'votable_type' => 'protocol',
             'votable_id' => $protocol->id,
             'value' => 1,
         ]);
 
-    $response->assertStatus(200)
-        ->assertJson([
-            'data' => [
-                'action' => 'created',
-                'current_vote' => 1,
-                'votes_count' => 1,
-            ],
-        ]);
-
-    $protocol->refresh();
-    expect($protocol->votes_count)->toBe(1)
-        ->and($protocol->score)->toBe(10);
-});
-
-test('casting identical vote toggles off and removes the vote', function () {
-    $user = User::factory()->create();
-    $protocol = Protocol::factory()->create(['votes_count' => 0]);
-
-    // Initial upvote
-    $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'protocol',
-            'votable_id' => $protocol->id,
-            'value' => 1,
-        ])->assertStatus(200);
-
-    expect($protocol->fresh()->votes_count)->toBe(1);
-
-    // Toggle off by clicking upvote again
-    $toggleResponse = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'protocol',
-            'votable_id' => $protocol->id,
-            'value' => 1,
-        ]);
-
-    $toggleResponse->assertStatus(200)
-        ->assertJson([
-            'data' => [
-                'action' => 'removed',
-                'current_vote' => 0,
-                'votes_count' => 0,
-            ],
-        ]);
-
-    expect($protocol->fresh()->votes_count)->toBe(0);
-});
-
-test('user can flip vote from upvote to downvote', function () {
-    $user = User::factory()->create();
-    $protocol = Protocol::factory()->create(['votes_count' => 0]);
-
-    // Upvote
-    $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'protocol',
-            'votable_id' => $protocol->id,
-            'value' => 1,
-        ])->assertStatus(200);
-
-    expect($protocol->fresh()->votes_count)->toBe(1);
-
-    // Flip to downvote (-1)
-    $flipResponse = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'protocol',
-            'votable_id' => $protocol->id,
-            'value' => -1,
-        ]);
-
-    $flipResponse->assertStatus(200)
-        ->assertJson([
-            'data' => [
-                'action' => 'updated',
-                'current_vote' => -1,
-                'votes_count' => -1,
-            ],
-        ]);
-
-    expect($protocol->fresh()->votes_count)->toBe(-1);
-});
-
-test('user can cast vote on a thread', function () {
-    $user = User::factory()->create();
-    $thread = Thread::factory()->create(['votes_count' => 0]);
-
-    $response = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'thread',
-            'votable_id' => $thread->id,
-            'value' => 1,
-        ]);
-
-    $response->assertStatus(200)
-        ->assertJson([
-            'data' => [
-                'action' => 'created',
-                'current_vote' => 1,
-                'votes_count' => 1,
-            ],
-        ]);
-
-    expect($thread->fresh()->votes_count)->toBe(1);
-});
-
-test('user can cast vote on a comment', function () {
-    $user = User::factory()->create();
-    $comment = Comment::factory()->create(['votes_count' => 0]);
-
-    $response = $this->actingAs($user, 'sanctum')
-        ->postJson('/api/v1/votes', [
-            'votable_type' => 'comment',
-            'votable_id' => $comment->id,
-            'value' => 1,
-        ]);
-
-    $response->assertStatus(200)
-        ->assertJson([
-            'data' => [
-                'action' => 'created',
-                'current_vote' => 1,
-                'votes_count' => 1,
-            ],
-        ]);
-
-    expect($comment->fresh()->votes_count)->toBe(1);
-});
-
-test('unauthenticated user cannot vote', function () {
-    $protocol = Protocol::factory()->create();
-
-    $response = $this->postJson('/api/v1/votes', [
-        'votable_type' => 'protocol',
-        'votable_id' => $protocol->id,
-        'value' => 1,
-    ]);
-
-    $response->assertStatus(401);
-});
+        $response->assertStatus(401);
+    }
+}

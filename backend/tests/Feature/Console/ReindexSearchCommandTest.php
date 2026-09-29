@@ -1,35 +1,44 @@
 <?php
 
+namespace Tests\Feature\Console;
+
 use App\Events\VoteCast;
 use App\Models\Protocol;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
 
-uses(RefreshDatabase::class);
+class ReindexSearchCommandTest extends TestCase
+{
+    use RefreshDatabase;
 
-test('reindex command runs and reports completion status', function () {
-    $this->artisan('search:reindex')
-        ->expectsOutputToContain('Re-indexing Protocol...')
-        ->expectsOutputToContain('Re-indexing Thread...')
-        ->expectsOutputToContain('Search reindexing process completed.')
-        ->assertSuccessful();
-});
+    public function test_reindex_command_runs_and_reports_completion_status(): void
+    {
+        $this->artisan('search:reindex')
+            ->expectsOutputToContain('Re-indexing Protocol...')
+            ->expectsOutputToContain('Re-indexing Thread...')
+            ->expectsOutputToContain('Search reindexing process completed.')
+            ->assertSuccessful();
+    }
 
-test('reindex command supports filtering by specific model', function () {
-    $this->artisan('search:reindex', ['--model' => 'protocol'])
-        ->expectsOutputToContain('Re-indexing Protocol...')
-        ->doesntExpectOutput('Re-indexing Thread...')
-        ->assertSuccessful();
-});
+    public function test_reindex_command_supports_filtering_by_specific_model(): void
+    {
+        $this->artisan('search:reindex', ['--model' => 'protocol'])
+            ->expectsOutputToContain('Re-indexing Protocol...')
+            ->doesntExpectOutput('Re-indexing Thread...')
+            ->assertSuccessful();
+    }
 
-test('SyncSearchIndex listener is attached to VoteCast event in event dispatcher', function () {
-    Event::fake([VoteCast::class]);
+    public function test_sync_search_index_listener_is_attached_to_vote_cast_event_in_event_dispatcher(): void
+    {
+        Event::fake([VoteCast::class]);
 
-    $user = User::factory()->create();
-    $protocol = Protocol::factory()->create();
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create();
 
-    event(new VoteCast($user, $protocol, 1, 'created'));
+        event(new VoteCast($user, $protocol, 1, 'created'));
 
-    Event::assertDispatched(VoteCast::class);
-});
+        Event::assertDispatched(VoteCast::class);
+    }
+}

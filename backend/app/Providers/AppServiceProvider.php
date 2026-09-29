@@ -31,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(\Typesense\Client::class, function () {
+            if (! config('scout.typesense.is_configured', false)) {
+                return null;
+            }
             $config = config('scout.typesense.client-settings', []);
             return new \Typesense\Client($config);
         });

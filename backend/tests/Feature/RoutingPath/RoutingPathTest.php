@@ -12,20 +12,15 @@ class RoutingPathTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_response_identifies_database_origin_headers_when_scout_is_null(): void
+    public function test_protocols_endpoint_strictly_fails_with_503_when_typesense_is_unconfigured(): void
     {
-        config(['scout.driver' => 'null']);
-
-        $user = User::factory()->create();
-        Protocol::factory()->create(['user_id' => $user->id, 'status' => 'published']);
+        $this->app->forgetInstance(\Typesense\Client::class);
+        $this->app->instance(\Typesense\Client::class, null);
 
         $response = $this->getJson('/api/v1/protocols');
 
-        $response->assertStatus(200)
-            ->assertHeader('X-Search-Driver', 'null')
-            ->assertHeader('X-Data-Source', 'database')
-            ->assertHeader('X-Database-Connection')
-            ->assertHeader('X-Database-Target');
+        $response->assertStatus(503);
+        $this->assertStringContainsString('permanently removed', (string) $response->json('message'));
     }
 
     public function test_response_strictly_fails_with_503_when_scout_driver_is_typesense_and_client_unreachable(): void
@@ -112,18 +107,73 @@ class RoutingPathTest extends TestCase
         $this->assertCount(0, $queries, 'Protocols endpoint should not execute any SQL queries when Typesense is active');
     }
 
-    public function test_threads_endpoint_identifies_database_headers(): void
+    public function test_threads_endpoint_strictly_fails_with_503_when_typesense_is_unconfigured(): void
     {
-        config(['scout.driver' => 'null']);
+        $this->app->forgetInstance(\Typesense\Client::class);
+        $this->app->instance(\Typesense\Client::class, null);
 
-        $user = User::factory()->create();
-        $protocol = Protocol::factory()->create(['user_id' => $user->id]);
-        Thread::factory()->create(['protocol_id' => $protocol->id, 'user_id' => $user->id]);
+        $response = $this->getJson('/api/v1/protocols/1/threads');
 
-        $response = $this->getJson("/api/v1/protocols/{$protocol->id}/threads");
+        $response->assertStatus(503);
+        $this->assertStringContainsString('permanently removed', (string) $response->json('message'));
+    }
+
+    public function test_threads_endpoint_hydrates_directly_from_typesense_documents_without_sql_queries(): void
+    {
+        config(['scout.driver' => 'typesense']);
+
+        $mockDocuments = $this->createMock(\Typesense\Documents::class);
+        $mockDocuments->expects($this->any())
+            ->method('search')
+            ->willReturn([
+                'found' => 1,
+                'hits' => [
+                    [
+                        'document' => [
+                            'id' => '10',
+                            'protocol_id' => 1,
+                            'user_id' => 1,
+                            'title' => 'Typesense Live Discussion',
+                            'body' => 'Hydrated directly from Typesense without SQL',
+                            'content' => 'Hydrated directly from Typesense without SQL',
+                            'author' => 'Thread Validator',
+                            'replies_count' => 0,
+                            'votes_count' => 5,
+                            'is_pinned' => false,
+                            'is_locked' => false,
+                            'created_at' => 1727654400,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $mockCollection = $this->createMock(\Typesense\Collection::class);
+        $mockCollection->documents = $mockDocuments;
+
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->willReturn($mockCollection);
+
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $this->app->instance(\Typesense\Client::class, $client);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+
+        $response = $this->getJson('/api/v1/protocols/1/threads');
 
         $response->assertStatus(200)
-            ->assertHeader('X-Search-Driver', 'null')
-            ->assertHeader('X-Data-Source', 'database');
+            ->assertHeader('X-Search-Driver', 'typesense')
+            ->assertHeader('X-Data-Source', 'typesense')
+            ->assertJsonPath('data.0.title', 'Typesense Live Discussion')
+            ->assertJsonPath('data.0.author.name', 'Thread Validator');
+
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        $this->assertCount(0, $queries, 'Threads endpoint should not execute any SQL queries when Typesense is active');
     }
 }

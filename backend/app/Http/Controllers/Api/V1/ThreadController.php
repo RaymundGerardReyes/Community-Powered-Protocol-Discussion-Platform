@@ -24,12 +24,13 @@ class ThreadController extends Controller
     /**
      * Display a listing of threads for a protocol.
      */
-    public function index(Request $request, Protocol $protocol): AnonymousResourceCollection
+    public function index(Request $request, int|string|Protocol $protocol): AnonymousResourceCollection
     {
+        $protocolId = $protocol instanceof Protocol ? $protocol->id : (int) $protocol;
         $filters = $request->only(['sort', 'search']);
         $perPage = min((int) $request->input('per_page', 15), 100);
 
-        $threads = $this->repository->paginateForProtocol($protocol->id, $filters, $perPage);
+        $threads = $this->repository->paginateForProtocol($protocolId, $filters, $perPage);
 
         return ThreadResource::collection($threads);
     }

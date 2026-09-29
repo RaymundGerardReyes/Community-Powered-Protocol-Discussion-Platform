@@ -357,4 +357,21 @@
 - **POSIX Shell Compatibility for Provisioning Scripts:**
   - In addition to PowerShell scripts (`scripts/provision-db.ps1`), provide POSIX-compatible shell scripts (`scripts/provision-db.sh`) to prevent backslash path escape errors in Git Bash (MINGW64) and Linux environments.
 
+---
+
+## 22. Permanent Removal of Database Fallback Routes & Mandatory Typesense Enforcement
+- **Elimination of Database Fallback Branches:**
+  - In `ProtocolRepository` and `ThreadRepository`, all secondary database query fallbacks (`Protocol::query()`, `Thread::query()`) have been permanently removed.
+  - Catalog browsing, pagination, search, protocol slug retrieval, and thread retrieval route 100% exclusively to the Typesense API.
+- **Fail-Loud Enforcement on Missing or Unconfigured Credentials:**
+  - If `TYPESENSE_ADMIN_API_KEY`, `TYPESENSE_API_KEY`, or `TYPESENSE_HOST` are omitted or removed from `.env`:
+    - `config/scout.php` marks `'is_configured' => false`.
+    - `AppServiceProvider` resolves `null` for `\Typesense\Client`.
+    - Repositories immediately abort with **HTTP 503 Service Unavailable** (`"Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed."`).
+  - Under NO circumstances may the application silently fall back to `database/database.sqlite` or PostgreSQL for catalog queries when search credentials are missing.
+- **Separation of Read Catalog vs. Transactional Write Paths:**
+  - Transactional mutations (user authentication, protocol creation, updates, deletes, reviews, votes) remain safely managed via transactional SQL Eloquent models.
+  - All read catalog and thread queries remain 100% decoupled from SQL databases and hydrated directly from Typesense documents.
+
+
 

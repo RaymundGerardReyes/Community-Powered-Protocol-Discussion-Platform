@@ -17,15 +17,22 @@ return [
     */
 
     'driver' => (function () {
-        $raw = env('SCOUT_DRIVER');
-        if ($raw === null || $raw === 'null' || $raw === '') {
+        $serverVal = $_SERVER['SCOUT_DRIVER'] ?? $_ENV['SCOUT_DRIVER'] ?? null;
+        if ($serverVal === 'null') {
             return 'null';
         }
-        $driver = strtolower(trim((string) $raw));
-        if (str_starts_with($driver, 'ty')) {
+
+        $raw = env('SCOUT_DRIVER');
+        if ($raw === null || $raw === '') {
             return 'typesense';
         }
-        return $driver;
+
+        $driver = strtolower(trim((string) $raw));
+        if ($driver === 'null') {
+            return 'null';
+        }
+
+        return 'typesense';
     })(),
 
     /*
@@ -272,8 +279,12 @@ return [
         }
 
         $apiKey = $selectedKey;
+        $hasKey = (!empty($cleanAdminKey) && $cleanAdminKey !== 'xyz') || (!empty($cleanRegularKey) && $cleanRegularKey !== 'xyz');
+        $hasHost = !empty(env('TYPESENSE_HOST'));
+        $isConfigured = $hasKey && $hasHost;
 
         return [
+            'is_configured' => $isConfigured,
             'client-settings' => [
                 'api_key' => $apiKey,
                 'api_key_source' => $keySource,

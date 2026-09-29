@@ -110,8 +110,11 @@ class DebugRoutingPathCommand extends Command
                 if (! app()->bound(\Typesense\Client::class)) {
                     throw new \RuntimeException('Typesense client not bound in service container');
                 }
-                /** @var \Typesense\Client $client */
+                /** @var ?\Typesense\Client $client */
                 $client = app(\Typesense\Client::class);
+                if (! $client instanceof \Typesense\Client) {
+                    throw new \RuntimeException('Typesense client is not configured (missing host or API key in .env)');
+                }
                 $health = $client->health->retrieve();
                 $tsStatus = '✓ HEALTHY (Node online, health=' . json_encode($health) . ')';
             } catch (\Throwable $e) {

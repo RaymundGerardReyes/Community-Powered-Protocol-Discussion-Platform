@@ -24,7 +24,16 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
     protected function getTypesense(): ?TypesenseClient
     {
-        return $this->typesense ?? (app()->bound(TypesenseClient::class) ? app(TypesenseClient::class) : null);
+        if ($this->typesense !== null) {
+            return $this->typesense;
+        }
+
+        if (! app()->bound(TypesenseClient::class)) {
+            return null;
+        }
+
+        $client = app(TypesenseClient::class);
+        return $client instanceof TypesenseClient ? $client : null;
     }
 
     public function hydrateProtocolFromDocument(array $doc): Protocol
@@ -73,260 +82,205 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
     public function paginateWithFilters(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $driver = (string) config('scout.driver', 'null');
-        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+        $typesense = $this->getTypesense();
+        if ($typesense === null) {
+            abort(503, "Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed.");
+        }
 
-        // 1. Typesense-first direct document catalog discovery when driver is active
-        if ($isTypesense) {
-            $typesense = $this->getTypesense();
-            if ($typesense === null) {
-                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
+        try {
+            $page = (int) ($filters['page'] ?? request('page', 1));
+            $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
+
+            $filterBy = [];
+            if (! empty($filters['status'])) {
+                $filterBy[] = 'status:=' . $filters['status'];
+            } else {
+                $filterBy[] = 'status:=published';
             }
 
-            try {
-                $page = (int) ($filters['page'] ?? request('page', 1));
-                $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
+            if (! empty($filters['category'])) {
+                $filterBy[] = 'category:=' . $filters['category'];
+            }
 
-                $filterBy = [];
-                if (! empty($filters['status'])) {
-                    $filterBy[] = 'status:=' . $filters['status'];
-                } else {
-                    $filterBy[] = 'status:=published';
-                }
+            $sortBy = match ($filters['sort'] ?? null) {
+                'top', 'upvoted' => 'votes_count:desc',
+                'rating' => 'average_rating:desc',
+                'reviews' => 'reviews_count:desc',
+                'oldest' => 'created_at:asc',
+                default => 'created_at:desc',
+            };
 
-                if (! empty($filters['category'])) {
-                    $filterBy[] = 'category:=' . $filters['category'];
-                }
+            $searchParams = [
+                'q' => $searchQuery,
+                'query_by' => 'title,description,tags',
+                'filter_by' => implode(' && ', $filterBy),
+                'sort_by' => $sortBy,
+                'page' => $page,
+                'per_page' => $perPage,
+            ];
 
-                $sortBy = match ($filters['sort'] ?? null) {
-                    'top', 'upvoted' => 'votes_count:desc',
-                    'rating' => 'average_rating:desc',
-                    'reviews' => 'reviews_count:desc',
-                    'oldest' => 'created_at:asc',
-                    default => 'created_at:desc',
-                };
+            $results = $typesense->collections['protocol']->documents->search($searchParams);
 
-                $searchParams = [
-                    'q' => $searchQuery,
-                    'query_by' => 'title,description,tags',
-                    'filter_by' => implode(' && ', $filterBy),
-                    'sort_by' => $sortBy,
-                    'page' => $page,
-                    'per_page' => $perPage,
-                ];
+            $found = (int) ($results['found'] ?? 0);
+            $hits = $results['hits'] ?? [];
 
-                $results = $typesense->collections['protocol']->documents->search($searchParams);
-
-                $found = (int) ($results['found'] ?? 0);
-                $hits = $results['hits'] ?? [];
-
-                if (empty($hits)) {
-                    return new ConcretePaginator(
-                        collect([]),
-                        $found,
-                        $perPage,
-                        $page,
-                        ['path' => ConcretePaginator::resolveCurrentPath()]
-                    );
-                }
-
-                // Direct document hydration without querying SQL database
-                $ordered = collect($hits)
-                    ->map(fn($hit) => $this->hydrateProtocolFromDocument($hit['document']))
-                    ->values();
-
+            if (empty($hits)) {
                 return new ConcretePaginator(
-                    $ordered,
+                    collect([]),
                     $found,
                     $perPage,
                     $page,
                     ['path' => ConcretePaginator::resolveCurrentPath()]
                 );
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                abort(503, "Typesense search engine error: {$e->getMessage()}");
             }
+
+            // Direct document hydration without querying SQL database
+            $ordered = collect($hits)
+                ->map(fn($hit) => $this->hydrateProtocolFromDocument($hit['document']))
+                ->values();
+
+            return new ConcretePaginator(
+                $ordered,
+                $found,
+                $perPage,
+                $page,
+                ['path' => ConcretePaginator::resolveCurrentPath()]
+            );
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
         }
-
-        // 2. Relational SQL Database Mode (active when SCOUT_DRIVER=null or database)
-        $query = Protocol::query()->with('user');
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        } else {
-            $query->published();
-        }
-
-        if (! empty($filters['category'])) {
-            $query->filterByCategory($filters['category']);
-        }
-
-        if (! empty($filters['search'])) {
-            $searchTerm = '%'.mb_strtolower($filters['search']).'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                    ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
-            });
-        }
-
-        $query->sortedBy($filters['sort'] ?? null);
-
-        return $query->paginate($perPage);
     }
 
     public function findBySlugOrFail(string $slug): Protocol
     {
-        $driver = (string) config('scout.driver', 'null');
-        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+        $typesense = $this->getTypesense();
+        if ($typesense === null) {
+            abort(503, "Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed.");
+        }
 
-        if ($isTypesense) {
-            $typesense = $this->getTypesense();
-            if ($typesense === null) {
-                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
-            }
-
-            try {
-                if (is_numeric($slug)) {
-                    try {
-                        $doc = $typesense->collections['protocol']->documents[(string) $slug]->retrieve();
-                        $protocol = $this->hydrateProtocolFromDocument($doc);
-                    } catch (\Throwable) {
-                        $results = $typesense->collections['protocol']->documents->search([
-                            'q' => '*',
-                            'filter_by' => 'id:=' . (string) $slug,
-                            'per_page' => 1,
-                        ]);
-                        if (empty($results['hits'])) {
-                            abort(404, "Protocol not found with ID: {$slug}");
-                        }
-                        $protocol = $this->hydrateProtocolFromDocument($results['hits'][0]['document']);
-                    }
-                } else {
+        try {
+            if (is_numeric($slug)) {
+                try {
+                    $doc = $typesense->collections['protocol']->documents[(string) $slug]->retrieve();
+                    $protocol = $this->hydrateProtocolFromDocument($doc);
+                } catch (\Throwable) {
                     $results = $typesense->collections['protocol']->documents->search([
-                        'q' => $slug,
-                        'query_by' => 'slug,title',
-                        'filter_by' => 'slug:=' . $slug,
+                        'q' => '*',
+                        'filter_by' => 'id:=' . (string) $slug,
                         'per_page' => 1,
                     ]);
-
                     if (empty($results['hits'])) {
-                        // Fallback search by normalized title/slug
-                        $results = $typesense->collections['protocol']->documents->search([
-                            'q' => str_replace('-', ' ', $slug),
-                            'query_by' => 'slug,title',
-                            'per_page' => 1,
-                        ]);
+                        abort(404, "Protocol not found with ID: {$slug}");
                     }
-
-                    if (empty($results['hits'])) {
-                        abort(404, "Protocol not found with slug: {$slug}");
-                    }
-
                     $protocol = $this->hydrateProtocolFromDocument($results['hits'][0]['document']);
                 }
+            } else {
+                $results = $typesense->collections['protocol']->documents->search([
+                    'q' => $slug,
+                    'query_by' => 'slug,title',
+                    'filter_by' => 'slug:=' . $slug,
+                    'per_page' => 1,
+                ]);
 
-                // Load associated threads directly from Typesense threads collection
-                try {
-                    $threadResults = $typesense->collections['threads']->documents->search([
-                        'q' => '*',
-                        'filter_by' => 'protocol_id:=' . (string) $protocol->id,
-                        'sort_by' => 'votes_count:desc',
-                        'per_page' => 25,
+                if (empty($results['hits'])) {
+                    // Fallback search by normalized title/slug
+                    $results = $typesense->collections['protocol']->documents->search([
+                        'q' => str_replace('-', ' ', $slug),
+                        'query_by' => 'slug,title',
+                        'per_page' => 1,
                     ]);
-
-                    $threads = collect($threadResults['hits'] ?? [])->map(function ($hit) use ($protocol) {
-                        $tdoc = $hit['document'];
-                        $thread = new \App\Models\Thread();
-                        $thread->exists = true;
-                        $thread->id = (int) $tdoc['id'];
-                        $thread->protocol_id = $protocol->id;
-                        $thread->title = (string) ($tdoc['title'] ?? '');
-                        $thread->slug = (string) ($tdoc['slug'] ?? \Illuminate\Support\Str::slug($tdoc['title'] ?? ''));
-                        $thread->content = (string) ($tdoc['content'] ?? $tdoc['body'] ?? '');
-                        $thread->is_pinned = (bool) ($tdoc['is_pinned'] ?? false);
-                        $thread->views_count = (int) ($tdoc['views_count'] ?? 0);
-                        $thread->replies_count = (int) ($tdoc['replies_count'] ?? $tdoc['comments_count'] ?? $tdoc['comment_count'] ?? 0);
-                        $thread->votes_count = (int) ($tdoc['votes_count'] ?? $tdoc['votes'] ?? $tdoc['score'] ?? 0);
-
-                        if (! empty($tdoc['created_at'])) {
-                            $thread->created_at = is_numeric($tdoc['created_at'])
-                                ? \Illuminate\Support\Carbon::createFromTimestamp($tdoc['created_at'])
-                                : \Illuminate\Support\Carbon::parse($tdoc['created_at']);
-                        } else {
-                            $thread->created_at = now();
-                        }
-                        $thread->updated_at = $thread->created_at;
-
-                        $tUser = new \App\Models\User();
-                        $tUser->exists = true;
-                        $tUser->id = (int) ($tdoc['user_id'] ?? $tdoc['author_id'] ?? 1);
-                        $tUser->name = (string) ($tdoc['author'] ?? $tdoc['author_name'] ?? 'Thread Author');
-                        $tUser->email = strtolower(str_replace(' ', '.', $tUser->name)) . '@protocol.network';
-                        $tUser->created_at = $thread->created_at;
-                        $tUser->updated_at = $thread->created_at;
-
-                        $thread->setRelation('user', $tUser);
-                        $thread->setRelation('comments', collect([]));
-                        return $thread;
-                    });
-
-                    $protocol->setRelation('threads', $threads);
-                } catch (\Throwable) {
-                    $protocol->setRelation('threads', collect([]));
                 }
 
-                return $protocol;
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                abort(503, "Typesense search engine error: {$e->getMessage()}");
+                if (empty($results['hits'])) {
+                    abort(404, "Protocol not found with slug: {$slug}");
+                }
+
+                $protocol = $this->hydrateProtocolFromDocument($results['hits'][0]['document']);
             }
+
+            // Load associated threads directly from Typesense threads collection
+            try {
+                $threadResults = $typesense->collections['threads']->documents->search([
+                    'q' => '*',
+                    'filter_by' => 'protocol_id:=' . (string) $protocol->id,
+                    'sort_by' => 'votes_count:desc',
+                    'per_page' => 25,
+                ]);
+
+                $threads = collect($threadResults['hits'] ?? [])->map(function ($hit) use ($protocol) {
+                    $tdoc = $hit['document'];
+                    $thread = new \App\Models\Thread();
+                    $thread->exists = true;
+                    $thread->id = (int) $tdoc['id'];
+                    $thread->protocol_id = $protocol->id;
+                    $thread->title = (string) ($tdoc['title'] ?? '');
+                    $thread->slug = (string) ($tdoc['slug'] ?? \Illuminate\Support\Str::slug($tdoc['title'] ?? ''));
+                    $thread->content = (string) ($tdoc['content'] ?? $tdoc['body'] ?? '');
+                    $thread->is_pinned = (bool) ($tdoc['is_pinned'] ?? false);
+                    $thread->views_count = (int) ($tdoc['views_count'] ?? 0);
+                    $thread->replies_count = (int) ($tdoc['replies_count'] ?? $tdoc['comments_count'] ?? $tdoc['comment_count'] ?? 0);
+                    $thread->votes_count = (int) ($tdoc['votes_count'] ?? $tdoc['votes'] ?? $tdoc['score'] ?? 0);
+
+                    if (! empty($tdoc['created_at'])) {
+                        $thread->created_at = is_numeric($tdoc['created_at'])
+                            ? \Illuminate\Support\Carbon::createFromTimestamp($tdoc['created_at'])
+                            : \Illuminate\Support\Carbon::parse($tdoc['created_at']);
+                    } else {
+                        $thread->created_at = now();
+                    }
+                    $thread->updated_at = $thread->created_at;
+
+                    $tUser = new \App\Models\User();
+                    $tUser->exists = true;
+                    $tUser->id = (int) ($tdoc['user_id'] ?? $tdoc['author_id'] ?? 1);
+                    $tUser->name = (string) ($tdoc['author'] ?? $tdoc['author_name'] ?? 'Thread Author');
+                    $tUser->email = strtolower(str_replace(' ', '.', $tUser->name)) . '@protocol.network';
+                    $tUser->created_at = $thread->created_at;
+                    $tUser->updated_at = $thread->created_at;
+
+                    $thread->setRelation('user', $tUser);
+                    $thread->setRelation('comments', collect([]));
+                    return $thread;
+                });
+
+                $protocol->setRelation('threads', $threads);
+            } catch (\Throwable) {
+                $protocol->setRelation('threads', collect([]));
+            }
+
+            return $protocol;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
         }
-
-        $query = Protocol::query()->with(['user', 'threads.user', 'reviews.user']);
-
-        if (is_numeric($slug)) {
-            return $query->where('id', (int) $slug)->orWhere('slug', $slug)->firstOrFail();
-        }
-
-        return $query->where('slug', $slug)->firstOrFail();
     }
 
     public function getTopVoted(int $limit = 10): Collection
     {
-        $driver = (string) config('scout.driver', 'null');
-        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
-
-        if ($isTypesense) {
-            $typesense = $this->getTypesense();
-            if ($typesense === null) {
-                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
-            }
-
-            try {
-                $results = $typesense->collections['protocol']->documents->search([
-                    'q' => '*',
-                    'query_by' => 'title,description',
-                    'filter_by' => 'status:=published',
-                    'sort_by' => 'votes_count:desc',
-                    'per_page' => $limit,
-                ]);
-
-                return collect($results['hits'] ?? [])
-                    ->map(fn($hit) => $this->hydrateProtocolFromDocument($hit['document']))
-                    ->values();
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                abort(503, "Typesense search engine error: {$e->getMessage()}");
-            }
+        $typesense = $this->getTypesense();
+        if ($typesense === null) {
+            abort(503, "Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed.");
         }
 
-        return Protocol::published()
-            ->with('user')
-            ->orderByDesc('score')
-            ->limit($limit)
-            ->get();
+        try {
+            $results = $typesense->collections['protocol']->documents->search([
+                'q' => '*',
+                'query_by' => 'title,description',
+                'filter_by' => 'status:=published',
+                'sort_by' => 'votes_count:desc',
+                'per_page' => $limit,
+            ]);
+
+            return collect($results['hits'] ?? [])
+                ->map(fn($hit) => $this->hydrateProtocolFromDocument($hit['document']))
+                ->values();
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
+        }
     }
 }

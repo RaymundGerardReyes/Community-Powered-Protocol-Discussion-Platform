@@ -23,7 +23,16 @@ class ThreadRepository implements ThreadRepositoryInterface
 
     protected function getTypesense(): ?TypesenseClient
     {
-        return $this->typesense ?? (app()->bound(TypesenseClient::class) ? app(TypesenseClient::class) : null);
+        if ($this->typesense !== null) {
+            return $this->typesense;
+        }
+
+        if (! app()->bound(TypesenseClient::class)) {
+            return null;
+        }
+
+        $client = app(TypesenseClient::class);
+        return $client instanceof TypesenseClient ? $client : null;
     }
 
     public function hydrateThreadFromDocument(array $doc): Thread
@@ -68,156 +77,111 @@ class ThreadRepository implements ThreadRepositoryInterface
 
     public function paginateForProtocol(int $protocolId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $driver = (string) config('scout.driver', 'null');
-        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+        $typesense = $this->getTypesense();
+        if ($typesense === null) {
+            abort(503, "Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed.");
+        }
 
-        // 1. Typesense-first search when driver is active
-        if ($isTypesense) {
-            $typesense = $this->getTypesense();
-            if ($typesense === null) {
-                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
-            }
+        try {
+            $page = (int) ($filters['page'] ?? request('page', 1));
+            $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
+            $sortBy = match ($filters['sort'] ?? null) {
+                'top' => 'votes_count:desc',
+                'oldest' => 'created_at:asc',
+                default => 'is_pinned:desc,created_at:desc',
+            };
 
-            try {
-                $page = (int) ($filters['page'] ?? request('page', 1));
-                $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
-                $sortBy = match ($filters['sort'] ?? null) {
-                    'top' => 'votes_count:desc',
-                    'oldest' => 'created_at:asc',
-                    default => 'is_pinned:desc,created_at:desc',
-                };
+            $searchParams = [
+                'q' => $searchQuery,
+                'query_by' => 'title,body,content,tags',
+                'filter_by' => 'protocol_id:=' . (string) $protocolId,
+                'sort_by' => $sortBy,
+                'page' => $page,
+                'per_page' => $perPage,
+            ];
 
-                $searchParams = [
-                    'q' => $searchQuery,
-                    'query_by' => 'title,body,content,tags',
-                    'filter_by' => 'protocol_id:=' . (string) $protocolId,
-                    'sort_by' => $sortBy,
-                    'page' => $page,
-                    'per_page' => $perPage,
-                ];
+            $results = $typesense->collections['threads']->documents->search($searchParams);
 
-                $results = $typesense->collections['threads']->documents->search($searchParams);
+            $found = (int) ($results['found'] ?? 0);
+            $hits = $results['hits'] ?? [];
 
-                $found = (int) ($results['found'] ?? 0);
-                $hits = $results['hits'] ?? [];
-
-                if (empty($hits)) {
-                    return new ConcretePaginator(
-                        collect([]),
-                        $found,
-                        $perPage,
-                        $page,
-                        ['path' => ConcretePaginator::resolveCurrentPath()]
-                    );
-                }
-
-                // Direct document hydration without querying SQL database
-                $ordered = collect($hits)
-                    ->map(fn($hit) => $this->hydrateThreadFromDocument($hit['document']))
-                    ->values();
-
+            if (empty($hits)) {
                 return new ConcretePaginator(
-                    $ordered,
+                    collect([]),
                     $found,
                     $perPage,
                     $page,
                     ['path' => ConcretePaginator::resolveCurrentPath()]
                 );
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                abort(503, "Typesense search engine error: {$e->getMessage()}");
             }
+
+            // Direct document hydration without querying SQL database
+            $ordered = collect($hits)
+                ->map(fn($hit) => $this->hydrateThreadFromDocument($hit['document']))
+                ->values();
+
+            return new ConcretePaginator(
+                $ordered,
+                $found,
+                $perPage,
+                $page,
+                ['path' => ConcretePaginator::resolveCurrentPath()]
+            );
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
         }
-
-        // 2. Relational SQL Database Mode (active when SCOUT_DRIVER=null or database)
-        $query = Thread::query()
-            ->where('protocol_id', $protocolId)
-            ->with('user');
-
-        if (! empty($filters['search'])) {
-            $searchTerm = '%'.mb_strtolower($filters['search']).'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                    ->orWhereRaw('LOWER(content) LIKE ?', [$searchTerm]);
-            });
-        }
-
-        $query->sortedBy($filters['sort'] ?? null);
-
-        return $query->paginate($perPage);
     }
 
     public function findByIdWithReplies(int $threadId): Thread
     {
-        $driver = (string) config('scout.driver', 'null');
-        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+        $typesense = $this->getTypesense();
+        if ($typesense === null) {
+            abort(503, "Typesense search engine is required. Client is not initialized and database fallback route has been permanently removed.");
+        }
 
-        if ($isTypesense) {
-            $typesense = $this->getTypesense();
-            if ($typesense === null) {
-                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
-            }
-
+        try {
             try {
-                try {
-                    $tdoc = $typesense->collections['threads']->documents[(string) $threadId]->retrieve();
-                    $thread = $this->hydrateThreadFromDocument($tdoc);
-                } catch (\Throwable) {
-                    $results = $typesense->collections['threads']->documents->search([
-                        'q' => '*',
-                        'filter_by' => 'id:=' . (string) $threadId,
-                        'per_page' => 1,
-                    ]);
+                $tdoc = $typesense->collections['threads']->documents[(string) $threadId]->retrieve();
+                $thread = $this->hydrateThreadFromDocument($tdoc);
+            } catch (\Throwable) {
+                $results = $typesense->collections['threads']->documents->search([
+                    'q' => '*',
+                    'filter_by' => 'id:=' . (string) $threadId,
+                    'per_page' => 1,
+                ]);
 
-                    if (empty($results['hits'])) {
-                        abort(404, "Thread not found with ID: {$threadId}");
-                    }
-
-                    $thread = $this->hydrateThreadFromDocument($results['hits'][0]['document']);
+                if (empty($results['hits'])) {
+                    abort(404, "Thread not found with ID: {$threadId}");
                 }
 
-                // If relational database is available, load relational comments; otherwise empty collection
-                try {
-                    $comments = \App\Models\Comment::where('thread_id', $threadId)
-                        ->with('user')
-                        ->orderBy('created_at', 'asc')
-                        ->get();
-
-                    $grouped = $comments->groupBy('parent_id');
-
-                    foreach ($comments as $comment) {
-                        $comment->setRelation('replies', $grouped->get($comment->id, collect()));
-                    }
-
-                    $thread->setRelation('comments', $comments->whereNull('parent_id')->values());
-                } catch (\Throwable) {
-                    $thread->setRelation('comments', collect([]));
-                }
-
-                return $thread;
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                abort(503, "Typesense search engine error: {$e->getMessage()}");
+                $thread = $this->hydrateThreadFromDocument($results['hits'][0]['document']);
             }
+
+            // Load associated comments if relational database is active; otherwise safe empty collection
+            try {
+                $comments = \App\Models\Comment::where('thread_id', $threadId)
+                    ->with('user')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                $grouped = $comments->groupBy('parent_id');
+
+                foreach ($comments as $comment) {
+                    $comment->setRelation('replies', $grouped->get($comment->id, collect()));
+                }
+
+                $thread->setRelation('comments', $comments->whereNull('parent_id')->values());
+            } catch (\Throwable) {
+                $thread->setRelation('comments', collect([]));
+            }
+
+            return $thread;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
         }
-
-        $thread = Thread::with(['user', 'protocol'])->findOrFail($threadId);
-
-        $comments = $thread->comments()
-            ->with('user')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        $grouped = $comments->groupBy('parent_id');
-
-        foreach ($comments as $comment) {
-            $comment->setRelation('replies', $grouped->get($comment->id, collect()));
-        }
-
-        $thread->setRelation('comments', $comments->whereNull('parent_id')->values());
-
-        return $thread;
     }
 }

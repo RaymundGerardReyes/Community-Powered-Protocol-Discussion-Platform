@@ -1,89 +1,103 @@
 <?php
 
+namespace Tests\Unit\Search;
+
 use App\Models\Protocol;
 use App\Models\Thread;
 use App\Models\User;
 use Tests\TestCase;
 
-uses(TestCase::class);
+class TypesenseCollectionSchemaTest extends TestCase
+{
+    private const ALLOWED_TYPESENSE_TYPES = [
+        'string',
+        'string[]',
+        'int32',
+        'int32[]',
+        'int64',
+        'int64[]',
+        'float',
+        'float[]',
+        'bool',
+        'bool[]',
+        'geopoint',
+        'geopoint[]',
+        'geopolygon',
+        'object',
+        'object[]',
+        'string*',
+        'image',
+        'auto',
+    ];
 
-const ALLOWED_TYPESENSE_TYPES = [
-    'string',
-    'string[]',
-    'int32',
-    'int32[]',
-    'int64',
-    'int64[]',
-    'float',
-    'float[]',
-    'bool',
-    'bool[]',
-    'geopoint',
-    'geopoint[]',
-    'geopolygon',
-    'object',
-    'object[]',
-    'string*',
-    'image',
-    'auto',
-];
-
-describe('Typesense Collections API Compliance', function () {
-    test('Protocol schema defines valid root parameters matching Typesense API spec', function () {
+    public function test_protocol_schema_defines_valid_root_parameters_matching_typesense_api_spec(): void
+    {
         $protocol = new Protocol();
         $schema = $protocol->typesenseCollectionSchema();
 
-        expect($schema)->toHaveKeys(['name', 'fields', 'default_sorting_field']);
-        expect($schema['name'])->toBe('protocol');
-        expect($schema['fields'])->toBeArray()->not->toBeEmpty();
-    });
+        $this->assertArrayHasKey('name', $schema);
+        $this->assertArrayHasKey('fields', $schema);
+        $this->assertArrayHasKey('default_sorting_field', $schema);
+        $this->assertSame('protocol', $schema['name']);
+        $this->assertIsArray($schema['fields']);
+        $this->assertNotEmpty($schema['fields']);
+    }
 
-    test('Thread schema defines valid root parameters matching Typesense API spec', function () {
+    public function test_thread_schema_defines_valid_root_parameters_matching_typesense_api_spec(): void
+    {
         $thread = new Thread();
         $schema = $thread->typesenseCollectionSchema();
 
-        expect($schema)->toHaveKeys(['name', 'fields', 'default_sorting_field']);
-        expect($schema['name'])->toBe('threads');
-        expect($schema['fields'])->toBeArray()->not->toBeEmpty();
-    });
+        $this->assertArrayHasKey('name', $schema);
+        $this->assertArrayHasKey('fields', $schema);
+        $this->assertArrayHasKey('default_sorting_field', $schema);
+        $this->assertSame('threads', $schema['name']);
+        $this->assertIsArray($schema['fields']);
+        $this->assertNotEmpty($schema['fields']);
+    }
 
-    test('Protocol schema incorporates auto-schema detection wildcard field', function () {
+    public function test_protocol_schema_incorporates_auto_schema_detection_wildcard_field(): void
+    {
         $protocol = new Protocol();
         $fields = $protocol->typesenseCollectionSchema()['fields'];
 
         $wildcardField = collect($fields)->firstWhere('name', '.*');
 
-        expect($wildcardField)->not->toBeNull();
-        expect($wildcardField['type'])->toBe('auto');
-    });
+        $this->assertNotNull($wildcardField);
+        $this->assertSame('auto', $wildcardField['type']);
+    }
 
-    test('Thread schema incorporates auto-schema detection wildcard field', function () {
+    public function test_thread_schema_incorporates_auto_schema_detection_wildcard_field(): void
+    {
         $thread = new Thread();
         $fields = $thread->typesenseCollectionSchema()['fields'];
 
         $wildcardField = collect($fields)->firstWhere('name', '.*');
 
-        expect($wildcardField)->not->toBeNull();
-        expect($wildcardField['type'])->toBe('auto');
-    });
+        $this->assertNotNull($wildcardField);
+        $this->assertSame('auto', $wildcardField['type']);
+    }
 
-    test('Protocol and Thread schemas configure enable_nested_fields per requirements', function () {
+    public function test_protocol_and_thread_schemas_configure_enable_nested_fields_per_requirements(): void
+    {
         $protocolSchema = (new Protocol())->typesenseCollectionSchema();
         $threadSchema = (new Thread())->typesenseCollectionSchema();
 
-        expect($protocolSchema['enable_nested_fields'] ?? false)->toBeTrue();
-        expect($threadSchema['enable_nested_fields'] ?? false)->toBeTrue();
-    });
+        $this->assertTrue($protocolSchema['enable_nested_fields'] ?? false);
+        $this->assertTrue($threadSchema['enable_nested_fields'] ?? false);
+    }
 
-    test('Protocol schema includes reviews_count for sorting by Most Reviewed', function () {
+    public function test_protocol_schema_includes_reviews_count_for_sorting_by_most_reviewed(): void
+    {
         $protocolSchema = (new Protocol())->typesenseCollectionSchema();
         $reviewsCountField = collect($protocolSchema['fields'])->firstWhere('name', 'reviews_count');
 
-        expect($reviewsCountField)->not->toBeNull();
-        expect($reviewsCountField['type'])->toBe('int32');
-    });
+        $this->assertNotNull($reviewsCountField);
+        $this->assertSame('int32', $reviewsCountField['type']);
+    }
 
-    test('All fields in Protocol and Thread schemas have valid Typesense data types', function () {
+    public function test_all_fields_in_protocol_and_thread_schemas_have_valid_typesense_data_types(): void
+    {
         $schemas = [
             (new Protocol())->typesenseCollectionSchema(),
             (new Thread())->typesenseCollectionSchema(),
@@ -91,14 +105,15 @@ describe('Typesense Collections API Compliance', function () {
 
         foreach ($schemas as $schema) {
             foreach ($schema['fields'] as $field) {
-                expect($field)->toHaveKeys(['name', 'type']);
-                expect(ALLOWED_TYPESENSE_TYPES)->toContain($field['type']);
+                $this->assertArrayHasKey('name', $field);
+                $this->assertArrayHasKey('type', $field);
+                $this->assertContains($field['type'], self::ALLOWED_TYPESENSE_TYPES);
             }
         }
-    });
+    }
 
-    test('default_sorting_field references an existing numerical field per Typesense spec', function () {
-        // According to Typesense docs: default_sorting_field must be an int32 or float field
+    public function test_default_sorting_field_references_an_existing_numerical_field_per_typesense_spec(): void
+    {
         $models = [new Protocol(), new Thread()];
 
         foreach ($models as $model) {
@@ -107,32 +122,33 @@ describe('Typesense Collections API Compliance', function () {
 
             $matchingField = collect($schema['fields'])->firstWhere('name', $sortField);
 
-            expect($matchingField)->not->toBeNull();
-            expect(['int32', 'int64', 'float'])->toContain($matchingField['type']);
+            $this->assertNotNull($matchingField);
+            $this->assertContains($matchingField['type'], ['int32', 'int64', 'float']);
         }
-    });
+    }
 
-    test('Facetable taxonomy fields are explicitly marked with facet: true', function () {
+    public function test_facetable_taxonomy_fields_are_explicitly_marked_with_facet_true(): void
+    {
         $protocolFields = collect((new Protocol())->typesenseCollectionSchema()['fields']);
 
         $categoryField = $protocolFields->firstWhere('name', 'category');
         $statusField = $protocolFields->firstWhere('name', 'status');
 
-        expect($categoryField)->not->toBeNull();
-        expect($categoryField['facet'] ?? false)->toBeTrue();
+        $this->assertNotNull($categoryField);
+        $this->assertTrue($categoryField['facet'] ?? false);
 
-        expect($statusField)->not->toBeNull();
-        expect($statusField['facet'] ?? false)->toBeTrue();
+        $this->assertNotNull($statusField);
+        $this->assertTrue($statusField['facet'] ?? false);
 
         $threadFields = collect((new Thread())->typesenseCollectionSchema()['fields']);
         $protocolIdField = $threadFields->firstWhere('name', 'protocol_id');
 
-        expect($protocolIdField)->not->toBeNull();
-        expect($protocolIdField['facet'] ?? false)->toBeTrue();
-    });
+        $this->assertNotNull($protocolIdField);
+        $this->assertTrue($protocolIdField['facet'] ?? false);
+    }
 
-    test('Protocol toSearchableArray aligns with schema types and fields', function () {
-        $user = new User(['id' => 10, 'name' => 'Alice']);
+    public function test_protocol_to_searchable_array_aligns_with_schema_types_and_fields(): void
+    {
         $protocol = new Protocol([
             'id' => 42,
             'title' => 'Decentralized ZK Rollup',
@@ -147,15 +163,16 @@ describe('Typesense Collections API Compliance', function () {
 
         $searchable = $protocol->toSearchableArray();
 
-        expect($searchable['id'])->toBe('42');
-        expect($searchable['title'])->toBe('Decentralized ZK Rollup');
-        expect($searchable['score'])->toBeInt();
-        expect($searchable['average_rating'])->toBeFloat();
-        expect($searchable['category'])->toBe('Infrastructure');
-        expect($searchable['status'])->toBe('published');
-    });
+        $this->assertSame('42', $searchable['id']);
+        $this->assertSame('Decentralized ZK Rollup', $searchable['title']);
+        $this->assertIsInt($searchable['score']);
+        $this->assertIsFloat($searchable['average_rating']);
+        $this->assertSame('Infrastructure', $searchable['category']);
+        $this->assertSame('published', $searchable['status']);
+    }
 
-    test('Thread toSearchableArray aligns with schema types and fields', function () {
+    public function test_thread_to_searchable_array_aligns_with_schema_types_and_fields(): void
+    {
         $thread = new Thread([
             'id' => 99,
             'protocol_id' => 42,
@@ -169,23 +186,27 @@ describe('Typesense Collections API Compliance', function () {
 
         $searchable = $thread->toSearchableArray();
 
-        expect($searchable['id'])->toBe('99');
-        expect($searchable['protocol_id'])->toBe('42');
-        expect($searchable['title'])->toBe('Recursive SNARK Verification');
-        expect($searchable['votes_count'])->toBeInt();
-        expect($searchable['replies_count'])->toBeInt();
-    });
+        $this->assertSame('99', $searchable['id']);
+        $this->assertSame('42', $searchable['protocol_id']);
+        $this->assertSame('Recursive SNARK Verification', $searchable['title']);
+        $this->assertIsInt($searchable['votes_count']);
+        $this->assertIsInt($searchable['replies_count']);
+    }
 
-    test('Scout Typesense configuration sanitizes host and supports admin API key', function () {
+    public function test_scout_typesense_configuration_sanitizes_host_and_supports_admin_api_key(): void
+    {
         $clientSettings = config('scout.typesense.client-settings');
 
-        expect($clientSettings)->toBeArray();
-        expect($clientSettings)->toHaveKey('nodes');
-        expect($clientSettings['nodes'])->toBeArray()->not->toBeEmpty();
+        $this->assertIsArray($clientSettings);
+        $this->assertArrayHasKey('nodes', $clientSettings);
+        $this->assertIsArray($clientSettings['nodes']);
+        $this->assertNotEmpty($clientSettings['nodes']);
 
         $primaryNode = $clientSettings['nodes'][0];
-        expect($primaryNode)->toHaveKeys(['host', 'port', 'protocol']);
-        expect($primaryNode['host'])->not->toStartWith('http://');
-        expect($primaryNode['host'])->not->toStartWith('https://');
-    });
-});
+        $this->assertArrayHasKey('host', $primaryNode);
+        $this->assertArrayHasKey('port', $primaryNode);
+        $this->assertArrayHasKey('protocol', $primaryNode);
+        $this->assertStringStartsNotWith('http://', $primaryNode['host']);
+        $this->assertStringStartsNotWith('https://', $primaryNode['host']);
+    }
+}

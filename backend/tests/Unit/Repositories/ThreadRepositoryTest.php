@@ -6,41 +6,83 @@ use App\Models\Comment;
 use App\Models\Protocol;
 use App\Models\Thread;
 use App\Models\User;
-use App\Repositories\Contracts\ThreadRepositoryInterface;
+use App\Repositories\Eloquent\ThreadRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class ThreadRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected ThreadRepositoryInterface $repository;
-
-    protected function setUp(): void
+    public function test_repository_strictly_aborts_with_503_when_typesense_is_unconfigured(): void
     {
-        parent::setUp();
-        $this->repository = app(ThreadRepositoryInterface::class);
+        $repo = new ThreadRepository(null);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('permanently removed');
+
+        $repo->paginateForProtocol(1, [], 10);
     }
 
-    public function test_paginate_for_protocol_filters_by_protocol_id(): void
+    public function test_paginate_for_protocol_queries_typesense_and_hydrates_thread_models(): void
     {
-        $user = User::factory()->create();
-        $protocol1 = Protocol::factory()->create(['user_id' => $user->id]);
-        $protocol2 = Protocol::factory()->create(['user_id' => $user->id]);
+        $mockDocuments = $this->createMock(\Typesense\Documents::class);
+        $mockDocuments->expects($this->once())
+            ->method('search')
+            ->with($this->callback(function (array $params) {
+                return $params['q'] === '*'
+                    && str_contains($params['filter_by'], 'protocol_id:=1')
+                    && $params['per_page'] === 10;
+            }))
+            ->willReturn([
+                'found' => 1,
+                'hits' => [
+                    [
+                        'document' => [
+                            'id' => '10',
+                            'protocol_id' => 1,
+                            'title' => 'Typesense Live Discussion',
+                            'body' => 'Hydrated directly from Typesense without SQL',
+                            'content' => 'Hydrated directly from Typesense without SQL',
+                            'author' => 'Thread Validator',
+                            'replies_count' => 0,
+                            'votes_count' => 5,
+                            'is_pinned' => false,
+                            'is_locked' => false,
+                            'created_at' => 1727654400,
+                        ],
+                    ],
+                ],
+            ]);
 
-        Thread::factory()->count(2)->create(['protocol_id' => $protocol1->id, 'user_id' => $user->id]);
-        Thread::factory()->count(3)->create(['protocol_id' => $protocol2->id, 'user_id' => $user->id]);
+        $mockCollection = $this->createMock(\Typesense\Collection::class);
+        $mockCollection->documents = $mockDocuments;
 
-        $paginator = $this->repository->paginateForProtocol($protocol1->id, [], 10);
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->with('threads')
+            ->willReturn($mockCollection);
 
-        $this->assertSame(2, $paginator->total());
-        foreach ($paginator->items() as $item) {
-            $this->assertSame($protocol1->id, $item->protocol_id);
-        }
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $repo = new ThreadRepository($client);
+        $paginator = $repo->paginateForProtocol(1, [], 10);
+
+        $this->assertSame(1, $paginator->total());
+        $this->assertSame('Typesense Live Discussion', $paginator->items()[0]->title);
+        $this->assertSame('Thread Validator', $paginator->items()[0]->user->name);
     }
 
     public function test_find_by_id_with_replies_eager_loads_nested_comment_tree(): void
     {
+        config(['scout.driver' => 'null']);
+
         $user = User::factory()->create();
         $protocol = Protocol::factory()->create(['user_id' => $user->id]);
         $thread = Thread::factory()->create(['protocol_id' => $protocol->id, 'user_id' => $user->id]);
@@ -66,7 +108,48 @@ class ThreadRepositoryTest extends TestCase
             'content' => 'Deep reply level 2',
         ]);
 
-        $loaded = $this->repository->findByIdWithReplies($thread->id);
+        $docData = [
+            'id' => (string) $thread->id,
+            'protocol_id' => $protocol->id,
+            'title' => $thread->title,
+            'content' => $thread->content,
+            'author' => $user->name,
+        ];
+
+        $mockDocument = $this->createMock(\Typesense\Document::class);
+        $mockDocument->expects($this->any())
+            ->method('retrieve')
+            ->willReturn($docData);
+
+        $mockDocuments = $this->createMock(\Typesense\Documents::class);
+        $mockDocuments->expects($this->any())
+            ->method('offsetGet')
+            ->with((string) $thread->id)
+            ->willReturn($mockDocument);
+        $mockDocuments->expects($this->any())
+            ->method('search')
+            ->willReturn([
+                'found' => 1,
+                'hits' => [['document' => $docData]],
+            ]);
+
+        $mockCollection = $this->createMock(\Typesense\Collection::class);
+        $mockCollection->documents = $mockDocuments;
+
+        $mockCollections = $this->createMock(\Typesense\Collections::class);
+        $mockCollections->expects($this->any())
+            ->method('offsetGet')
+            ->with('threads')
+            ->willReturn($mockCollection);
+
+        $client = new \Typesense\Client([
+            'nodes' => [['host' => 'localhost', 'port' => '8108', 'protocol' => 'http']],
+            'api_key' => 'test-key',
+        ]);
+        $client->collections = $mockCollections;
+
+        $repo = new ThreadRepository($client);
+        $loaded = $repo->findByIdWithReplies($thread->id);
 
         $this->assertSame($thread->id, $loaded->id);
         $this->assertCount(1, $loaded->comments);
