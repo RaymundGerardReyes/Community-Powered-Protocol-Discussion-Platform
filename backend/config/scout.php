@@ -172,13 +172,67 @@ return [
     */
 
     'typesense' => (function () {
-        $rawHost = trim((string) env('TYPESENSE_HOST', 'localhost'), " \t\n\r\0\x0B\"'");
-        $rawHost = preg_replace('#^https?://#i', '', rtrim($rawHost, '/'));
-
-        // Handle possible host:port formats like mycluster.typesense.net:443
-        $parts = explode(':', $rawHost);
+        $rawHost = (string) env('TYPESENSE_HOST', 'localhost');
+        // 1. Strip all non-ASCII, non-printable characters (NBSP \xC2\xA0, BOM, zero-width spaces, control chars)
+        $clean = preg_replace('/[^\x21-\x7E]/', '', $rawHost);
+        // 2. Strip protocol prefix
+        $clean = preg_replace('#^https?://#i', '', $clean);
+        // 3. Strip trailing slashes and paths
+        $clean = explode('/', $clean)[0];
+        // 4. Extract embedded port if present
+        $parts = explode(':', $clean);
         $cleanHost = trim($parts[0], " \t\n\r\0\x0B\"'");
-        $embeddedPort = $parts[1] ?? null;
+        $embeddedPort = isset($parts[1]) && is_numeric($parts[1]) ? $parts[1] : null;
+
+        $hostStatus = 'local';
+        $originalHost = $cleanHost;
+
+        if ($cleanHost !== 'localhost' && $cleanHost !== '127.0.0.1' && !empty($cleanHost)) {
+            // Direct DNS check
+            if (gethostbyname($cleanHost) !== $cleanHost) {
+                $hostStatus = 'resolved_direct';
+            } else {
+                // Generate candidate variants for Typesense Cloud
+                $candidates = [];
+
+                // Case A: User pasted only the Cluster ID (e.g. 10-25 alphanumeric chars without dots)
+                if (preg_match('/^[a-z0-9]{10,25}$/i', $cleanHost)) {
+                    $candidates[] = $cleanHost . '-1.a1.typesense.net';
+                    $candidates[] = $cleanHost . '.a1.typesense.net';
+                }
+
+                // Case B: Host ends in typesense.net
+                if (str_ends_with($cleanHost, 'typesense.net')) {
+                    // Sub-case: Missing .a1. or .a[0-9].
+                    if (!preg_match('/\.a[0-9]\./i', $cleanHost)) {
+                        $withA1 = preg_replace('/\.typesense\.net$/i', '.a1.typesense.net', $cleanHost);
+                        $candidates[] = $withA1;
+                        if (!str_contains($withA1, '-1.')) {
+                            $candidates[] = preg_replace('/^([a-z0-9]+)(\.a1\.typesense\.net)$/i', '$1-1$2', $withA1);
+                        }
+                    }
+
+                    // Sub-case: Toggle -1 suffix
+                    if (preg_match('/^([a-z0-9]+)-1(\..+)$/i', $cleanHost, $m)) {
+                        $candidates[] = $m[1] . $m[2];
+                    } elseif (preg_match('/^([a-z0-9]+)(\.a[0-9]\.typesense\.net)$/i', $cleanHost, $m)) {
+                        $candidates[] = $m[1] . '-1' . $m[2];
+                    }
+                }
+
+                foreach ($candidates as $candidate) {
+                    if (gethostbyname($candidate) !== $candidate) {
+                        $cleanHost = $candidate;
+                        $hostStatus = 'auto_corrected';
+                        break;
+                    }
+                }
+
+                if ($hostStatus !== 'auto_corrected') {
+                    $hostStatus = 'unresolved';
+                }
+            }
+        }
 
         $isCloud = str_contains($cleanHost, 'typesense.net');
         $port = (string) (env('TYPESENSE_PORT') ?: ($embeddedPort ?: ($isCloud ? '443' : '8108')));
@@ -187,26 +241,34 @@ return [
             $protocol = ($port === '443' || $isCloud) ? 'https' : 'http';
         }
 
-        $adminKey = env('TYPESENSE_ADMIN_API_KEY');
-        $regularKey = env('TYPESENSE_API_KEY');
+        $rawAdminKey = env('TYPESENSE_ADMIN_API_KEY');
+        $rawRegularKey = env('TYPESENSE_API_KEY');
 
-        if (!empty($adminKey) && $adminKey !== 'xyz') {
-            $selectedKey = $adminKey;
+        $cleanAdminKey = preg_replace('/[^\x21-\x7E]/', '', (string) $rawAdminKey);
+        $cleanAdminKey = trim($cleanAdminKey, " \t\n\r\0\x0B\"'");
+
+        $cleanRegularKey = preg_replace('/[^\x21-\x7E]/', '', (string) $rawRegularKey);
+        $cleanRegularKey = trim($cleanRegularKey, " \t\n\r\0\x0B\"'");
+
+        if (!empty($cleanAdminKey) && $cleanAdminKey !== 'xyz') {
+            $selectedKey = $cleanAdminKey;
             $keySource = 'TYPESENSE_ADMIN_API_KEY';
-        } elseif (!empty($regularKey) && $regularKey !== 'xyz') {
-            $selectedKey = $regularKey;
+        } elseif (!empty($cleanRegularKey) && $cleanRegularKey !== 'xyz') {
+            $selectedKey = $cleanRegularKey;
             $keySource = 'TYPESENSE_API_KEY';
         } else {
-            $selectedKey = $adminKey ?: ($regularKey ?: 'xyz');
+            $selectedKey = $cleanAdminKey ?: ($cleanRegularKey ?: 'xyz');
             $keySource = 'default (xyz)';
         }
 
-        $apiKey = trim((string) $selectedKey, " \t\n\r\0\x0B\"'");
+        $apiKey = $selectedKey;
 
         return [
             'client-settings' => [
                 'api_key' => $apiKey,
                 'api_key_source' => $keySource,
+                'host_status' => $hostStatus,
+                'original_host' => $originalHost,
                 'nodes' => [
                     [
                         'host' => $cleanHost,
@@ -221,10 +283,10 @@ return [
                     'path' => env('TYPESENSE_PATH', ''),
                     'protocol' => $protocol,
                 ],
-                'connection_timeout_seconds' => env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 5),
-                'healthcheck_interval_seconds' => env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
-                'num_retries' => env('TYPESENSE_NUM_RETRIES', 3),
-                'retry_interval_seconds' => env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
+                'connection_timeout_seconds' => (int) env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 10),
+                'healthcheck_interval_seconds' => (int) env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
+                'num_retries' => (int) env('TYPESENSE_NUM_RETRIES', 3),
+                'retry_interval_seconds' => (int) env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
             ],
             'model-settings' => [],
             'import_action' => env('TYPESENSE_IMPORT_ACTION', 'upsert'),
