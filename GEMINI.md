@@ -320,5 +320,9 @@
   - If the Typesense cluster is unreachable, uninitialized, or returns an error, the repository MUST fail loudly (HTTP 503) rather than silently masking the failure by pulling from the relational database.
   - Relational database queries are strictly reserved for standalone host mode when `SCOUT_DRIVER=null` or `database`.
   - All API responses must attach `X-Search-Driver` and `X-Data-Source` (`typesense` vs `database`) headers to guarantee absolute transparency over which engine served the request.
+- **Typesense PHP Client SDK Syntax Standard:**
+  - In the PHP SDK (`typesense/typesense-php`), collections and documents are accessed as class properties with array access, NOT method calls:
+    `$client->collections['collection_name']->documents->search(...)`
+  - Never call `$client->collections('name')->documents()->search(...)`, which is the JavaScript/TypeScript SDK syntax and throws `Call to undefined method Typesense\Client::collections()`.
 
 
