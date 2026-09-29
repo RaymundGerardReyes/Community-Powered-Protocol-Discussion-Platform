@@ -11,7 +11,9 @@ use Typesense\Client as TypesenseClient;
 
 /**
  * ProtocolRepository
- * Encapsulates search and database query complexity (Typesense-first discovery with resilient SQL fallback).
+ * Encapsulates search and database query complexity.
+ * When SCOUT_DRIVER is set to typesense (or ty), strictly routes through Typesense API.
+ * When SCOUT_DRIVER is null/database, routes through relational SQL tables.
  */
 class ProtocolRepository implements ProtocolRepositoryInterface
 {
@@ -25,8 +27,15 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
     public function paginateWithFilters(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        // 1. Attempt Typesense-first catalog discovery when driver is active
-        if (config('scout.driver') === 'typesense' && $this->typesense !== null) {
+        $driver = (string) config('scout.driver', 'null');
+        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+
+        // 1. Typesense-first catalog discovery when driver is active
+        if ($isTypesense) {
+            if ($this->typesense === null) {
+                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
+            }
+
             try {
                 $page = (int) ($filters['page'] ?? request('page', 1));
                 $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
@@ -92,27 +101,24 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     $page,
                     ['path' => ConcretePaginator::resolveCurrentPath()]
                 );
-            } catch (\Throwable) {
-                // Fallback to relational SQL query below
+            } catch (\Throwable $e) {
+                abort(503, "Typesense search engine error: {$e->getMessage()}");
             }
         }
 
-        // 2. Resilient SQL Database Fallback
+        // 2. Relational SQL Database Mode (active when SCOUT_DRIVER=null or database)
         $query = Protocol::query()->with('user');
 
-        // Filter by status (default published for public views)
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         } else {
             $query->published();
         }
 
-        // Filter by category
         if (! empty($filters['category'])) {
             $query->filterByCategory($filters['category']);
         }
 
-        // Search
         if (! empty($filters['search'])) {
             $searchTerm = '%'.mb_strtolower($filters['search']).'%';
             $query->where(function ($q) use ($searchTerm) {
@@ -121,7 +127,6 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             });
         }
 
-        // Apply sorting (top, rating, reviews, oldest, newest)
         $query->sortedBy($filters['sort'] ?? null);
 
         return $query->paginate($perPage);
@@ -140,7 +145,14 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
     public function getTopVoted(int $limit = 10): Collection
     {
-        if (config('scout.driver') === 'typesense' && $this->typesense !== null) {
+        $driver = (string) config('scout.driver', 'null');
+        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+
+        if ($isTypesense) {
+            if ($this->typesense === null) {
+                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
+            }
+
             try {
                 $results = $this->typesense->collections('protocol')->documents()->search([
                     'q' => '*',
@@ -155,8 +167,10 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     $records = Protocol::with('user')->whereIn('id', $ids)->get()->keyBy('id');
                     return collect($ids)->map(fn($id) => $records->get($id))->filter()->values();
                 }
-            } catch (\Throwable) {
-                // Fallback to SQL
+
+                return collect([]);
+            } catch (\Throwable $e) {
+                abort(503, "Typesense search engine error: {$e->getMessage()}");
             }
         }
 

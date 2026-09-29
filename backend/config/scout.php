@@ -16,7 +16,17 @@ return [
     |
     */
 
-    'driver' => env('SCOUT_DRIVER', 'collection'),
+    'driver' => (function () {
+        $raw = env('SCOUT_DRIVER');
+        if ($raw === null || $raw === 'null' || $raw === '') {
+            return 'null';
+        }
+        $driver = strtolower(trim((string) $raw));
+        if (str_starts_with($driver, 'ty')) {
+            return 'typesense';
+        }
+        return $driver;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

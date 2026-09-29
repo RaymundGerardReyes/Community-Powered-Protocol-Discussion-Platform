@@ -10,7 +10,9 @@ use Typesense\Client as TypesenseClient;
 
 /**
  * ThreadRepository
- * Encapsulates thread query complexity (Typesense-first search, pinned priority, comments nesting, sorting).
+ * Encapsulates thread query complexity.
+ * Strictly routes through Typesense API when SCOUT_DRIVER is typesense or ty.
+ * Routes through relational SQL database when SCOUT_DRIVER is null or database.
  */
 class ThreadRepository implements ThreadRepositoryInterface
 {
@@ -24,8 +26,15 @@ class ThreadRepository implements ThreadRepositoryInterface
 
     public function paginateForProtocol(int $protocolId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        // 1. Attempt Typesense-first search when driver is active
-        if (config('scout.driver') === 'typesense' && $this->typesense !== null) {
+        $driver = (string) config('scout.driver', 'null');
+        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+
+        // 1. Typesense-first search when driver is active
+        if ($isTypesense) {
+            if ($this->typesense === null) {
+                abort(503, "Typesense search engine is active (SCOUT_DRIVER={$driver}) but client is not initialized.");
+            }
+
             try {
                 $page = (int) ($filters['page'] ?? request('page', 1));
                 $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
@@ -77,12 +86,12 @@ class ThreadRepository implements ThreadRepositoryInterface
                     $page,
                     ['path' => ConcretePaginator::resolveCurrentPath()]
                 );
-            } catch (\Throwable) {
-                // Fallback to SQL below
+            } catch (\Throwable $e) {
+                abort(503, "Typesense search engine error: {$e->getMessage()}");
             }
         }
 
-        // 2. Resilient SQL Database Fallback
+        // 2. Relational SQL Database Mode (active when SCOUT_DRIVER=null or database)
         $query = Thread::query()
             ->where('protocol_id', $protocolId)
             ->with('user');

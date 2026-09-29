@@ -35,4 +35,22 @@ class SearchEndpointsTest extends TestCase
                 'model' => 'all',
             ]);
     }
+
+    public function test_api_response_attaches_search_driver_and_data_source_headers(): void
+    {
+        $response = $this->getJson('/api/v1/protocols');
+
+        $response->assertHeader('X-Search-Driver');
+        $response->assertHeader('X-Data-Source');
+    }
+
+    public function test_typesense_strict_routing_aborts_when_configured_driver_is_typesense_and_client_fails(): void
+    {
+        config(['scout.driver' => 'typesense']);
+
+        $response = $this->getJson('/api/v1/protocols');
+
+        // With mock/unconfigured client in testing, strict mode aborts 503 instead of pulling silently from DB
+        $response->assertStatus(503);
+    }
 }

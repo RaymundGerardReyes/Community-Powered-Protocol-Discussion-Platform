@@ -26,8 +26,13 @@ class TrackResponseTime
 
         $durationMs = round((microtime(true) - $startTime) * 1000, 2);
 
+        $driver = (string) config('scout.driver', 'null');
+        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+
         $response->headers->set('X-Response-Time', "{$durationMs}ms");
         $response->headers->set('Server-Timing', "app;dur={$durationMs};desc=\"Laravel Execution\"");
+        $response->headers->set('X-Search-Driver', $driver);
+        $response->headers->set('X-Data-Source', $isTypesense ? 'typesense' : 'database');
 
         return $response;
     }
