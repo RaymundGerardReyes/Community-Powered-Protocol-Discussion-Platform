@@ -29,8 +29,17 @@ class ReindexSearch extends Command
      */
     public function handle(): int
     {
-        $driver = config('scout.driver', 'null');
-        $this->info("Search Driver: {$driver}");
+        $driver = config('scout.driver');
+        $displayDriver = $driver ?: 'null (Search disabled)';
+        $this->info("Search Driver: {$displayDriver}");
+
+        if ($driver === null || $driver === 'null' || empty($driver)) {
+            $this->warn("⚠ Notice: SCOUT_DRIVER is set to 'null' in your backend/.env file.");
+            $this->line("  Scout is currently running in local offline mode. Records will NOT be sent to Typesense Cloud.");
+            $this->line("  To upload records to your Typesense Cloud cluster, set:");
+            $this->line("    <comment>SCOUT_DRIVER=typesense</comment> in backend/.env");
+            $this->newLine();
+        }
 
         if ($driver === 'typesense') {
             $node = config('scout.typesense.client-settings.nodes.0', []);
