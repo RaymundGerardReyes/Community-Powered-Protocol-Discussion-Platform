@@ -41,7 +41,7 @@ Route::get('/threads/{thread}/comments', [CommentController::class, 'index']);
 // Review public endpoints
 Route::get('/protocols/{protocol}/reviews', [ReviewController::class, 'index']);
 
-// Search endpoints
+// Search sidecar status & reindex endpoints
 Route::get('/search/status', [SearchController::class, 'status']);
 Route::post('/search/reindex', [SearchController::class, 'reindex']);
 

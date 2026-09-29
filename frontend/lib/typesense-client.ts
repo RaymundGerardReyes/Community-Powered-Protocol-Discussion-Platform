@@ -56,13 +56,46 @@ export const typesenseClient = activeConfig.isValid
     })
   : null;
 
-export async function searchProtocols(query: string) {
+export interface ProtocolSearchParams {
+  query: string;
+  sortBy?: 'recent' | 'reviewed' | 'rating' | 'upvoted' | 'newest' | 'reviews' | 'top' | string;
+  perPage?: number;
+}
+
+export async function searchProtocols(paramsOrQuery: string | ProtocolSearchParams) {
   if (!typesenseClient) return null; // caller falls back to Laravel
+
+  const query = typeof paramsOrQuery === 'string' ? paramsOrQuery : paramsOrQuery.query;
+  const sortByParam = typeof paramsOrQuery === 'string' ? undefined : paramsOrQuery.sortBy;
+  const perPage = (typeof paramsOrQuery !== 'string' && paramsOrQuery.perPage) ? paramsOrQuery.perPage : 20;
+
+  let sortBy: string | undefined;
+  if (sortByParam === 'recent' || sortByParam === 'newest') {
+    sortBy = 'created_at:desc';
+  } else if (sortByParam === 'reviewed' || sortByParam === 'reviews') {
+    sortBy = 'reviews_count:desc';
+  } else if (sortByParam === 'rating') {
+    sortBy = 'average_rating:desc';
+  } else if (sortByParam === 'upvoted' || sortByParam === 'top') {
+    sortBy = 'votes:desc';
+  } else if (sortByParam) {
+    sortBy = sortByParam;
+  }
+
   try {
+    const searchOptions: Record<string, unknown> = {
+      q: query,
+      query_by: 'title,description,tags',
+      per_page: perPage,
+    };
+    if (sortBy) {
+      searchOptions.sort_by = sortBy;
+    }
+
     return await typesenseClient
       .collections('protocols')
       .documents()
-      .search({ q: query, query_by: 'title,description,tags', per_page: 20 });
+      .search(searchOptions);
   } catch {
     // If Typesense is unreachable or times out, gracefully fall back to Laravel search
     return null;

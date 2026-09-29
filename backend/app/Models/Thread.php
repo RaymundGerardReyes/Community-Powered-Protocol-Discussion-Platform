@@ -110,6 +110,7 @@ class Thread extends Model
                 ['name' => '.*', 'type' => 'auto'],
             ],
             'default_sorting_field' => 'votes_count',
+            'enable_nested_fields' => true,
         ];
     }
 }

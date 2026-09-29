@@ -30,13 +30,26 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             $query->filterByCategory($filters['category']);
         }
 
-        // Text search across title and description (case-insensitive)
+        // Search: use Typesense Scout when driver is active, otherwise fallback to case-insensitive SQL search
         if (! empty($filters['search'])) {
-            $searchTerm = '%'.mb_strtolower($filters['search']).'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                    ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
-            });
+            $usedScout = false;
+            if (config('scout.driver') === 'typesense') {
+                try {
+                    $ids = Protocol::search($filters['search'])->keys()->all();
+                    $query->whereIn('id', $ids);
+                    $usedScout = true;
+                } catch (\Throwable) {
+                    $usedScout = false;
+                }
+            }
+
+            if (! $usedScout) {
+                $searchTerm = '%'.mb_strtolower($filters['search']).'%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
+                });
+            }
         }
 
         // Apply sorting (top, rating, reviews, oldest, newest)

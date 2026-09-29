@@ -67,6 +67,22 @@ describe('Typesense Collections API Compliance', function () {
         expect($wildcardField['type'])->toBe('auto');
     });
 
+    test('Protocol and Thread schemas configure enable_nested_fields per requirements', function () {
+        $protocolSchema = (new Protocol())->typesenseCollectionSchema();
+        $threadSchema = (new Thread())->typesenseCollectionSchema();
+
+        expect($protocolSchema['enable_nested_fields'] ?? false)->toBeTrue();
+        expect($threadSchema['enable_nested_fields'] ?? false)->toBeTrue();
+    });
+
+    test('Protocol schema includes reviews_count for sorting by Most Reviewed', function () {
+        $protocolSchema = (new Protocol())->typesenseCollectionSchema();
+        $reviewsCountField = collect($protocolSchema['fields'])->firstWhere('name', 'reviews_count');
+
+        expect($reviewsCountField)->not->toBeNull();
+        expect($reviewsCountField['type'])->toBe('int32');
+    });
+
     test('All fields in Protocol and Thread schemas have valid Typesense data types', function () {
         $schemas = [
             (new Protocol())->typesenseCollectionSchema(),

@@ -291,3 +291,18 @@
 - **Accessible Name Integrity:**
   - Do not use redundant `aria-label` overrides on the stretched link that mask the natural heading text, ensuring full compatibility with automated tests and screen reader navigation.
 
+---
+
+## 19. Typesense Schema Alignment & Dual-Path Scout/SQL Fallback Routing Standard
+- **Schema Parity & Nested Fields Invariant:**
+  - Typesense collection schemas must explicitly declare sorting and faceting fields required by application filters (`votes`, `reviews_count`, `average_rating`, `status`, `category`, `tags`).
+  - Collections must set `"enable_nested_fields": true` to support polymorphic and semi-structured metadata attributes (e.g. `metadata.tags`, audit trails).
+  - Include the wildcard `['name' => '.*', 'type' => 'auto']` to enable schema auto-detection for emergent fields.
+- **Repository Dual-Path Search Routing:**
+  - When `config('scout.driver') === 'typesense'` and a search term is provided, the repository must query Typesense via `Model::search($term)->keys()` and filter Eloquent queries by matching IDs (`whereIn('id', $ids)`).
+  - The repository search execution MUST be wrapped in a resilient exception guard (`try ... catch (\Throwable)`). If the Typesense daemon or cloud cluster experiences a timeout or network interruption, the query must immediately fall back to SQL case-insensitive search (`LOWER(...) LIKE ?`) without bubbling a 500 error to the client.
+- **Client Direct Query vs. API Fallback:**
+  - High-frequency search-as-you-type in the frontend must query Typesense Cloud directly using the Search-Only API key for sub-15ms response times.
+  - If client-side search encounters network failures, it must seamlessly degrade to the backend endpoint (`/api/v1/protocols?search=`).
+
+

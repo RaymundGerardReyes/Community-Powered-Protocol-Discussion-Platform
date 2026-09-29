@@ -103,9 +103,12 @@ class Protocol extends Model
             'title' => $this->title,
             'description' => $this->description,
             'category' => $this->category,
+            'tags' => (array) ($this->metadata['tags'] ?? [strtolower($this->category)]),
             'version' => $this->version,
             'status' => $this->status,
             'score' => (int) $this->score,
+            'votes' => (int) $this->votes_count,
+            'reviews_count' => (int) $this->reviews_count,
             'average_rating' => (float) $this->average_rating,
             'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
@@ -125,12 +128,16 @@ class Protocol extends Model
                 ['name' => 'title', 'type' => 'string'],
                 ['name' => 'description', 'type' => 'string'],
                 ['name' => 'category', 'type' => 'string', 'facet' => true],
+                ['name' => 'tags', 'type' => 'string[]', 'facet' => true, 'optional' => true],
                 ['name' => 'status', 'type' => 'string', 'facet' => true],
-                ['name' => 'score', 'type' => 'int32'],
-                ['name' => 'average_rating', 'type' => 'float'],
+                ['name' => 'score', 'type' => 'int32', 'optional' => true],
+                ['name' => 'votes', 'type' => 'int32'],
+                ['name' => 'reviews_count', 'type' => 'int32', 'optional' => true],
+                ['name' => 'average_rating', 'type' => 'float', 'optional' => true],
                 ['name' => '.*', 'type' => 'auto'],
             ],
-            'default_sorting_field' => 'score',
+            'default_sorting_field' => 'votes',
+            'enable_nested_fields' => true,
         ];
     }
 }
