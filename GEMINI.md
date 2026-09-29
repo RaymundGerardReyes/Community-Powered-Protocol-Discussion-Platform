@@ -304,5 +304,10 @@
 - **Client Direct Query vs. API Fallback:**
   - High-frequency search-as-you-type in the frontend must query Typesense Cloud directly using the Search-Only API key for sub-15ms response times.
   - If client-side search encounters network failures, it must seamlessly degrade to the backend endpoint (`/api/v1/protocols?search=`).
+- **Default Sorting Field & Searchable Payload Parity:**
+  - Whenever a collection schema declares a `default_sorting_field` (such as `vote_score`, `votes_count`, or `votes`), the model's `toSearchableArray()` MUST include that exact numerical attribute.
+  - To prevent schema lockouts when connecting to existing collections created via dashboards or external tools, searchable payloads and collection schemas must provide canonical field aliases (`votes_count`, `vote_score`, and `votes`).
+- **Cloud Credential ASCII Sanitization Invariant:**
+  - Hostnames, node URLs, and API keys retrieved from `.env` must be sanitized against non-printable Unicode characters, non-breaking spaces (`\xC2\xA0`), zero-width spaces, and trailing quotes/slashes before being passed to HTTP clients or DNS resolvers (`preg_replace('/[^\x21-\x7E]/', '', ...)`).
 
 
