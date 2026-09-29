@@ -90,6 +90,14 @@ class Thread extends Model
     }
 
     /**
+     * Get the index name for the model.
+     */
+    public function searchableAs(): string
+    {
+        return 'threads';
+    }
+
+    /**
      * Get the Typesense collection schema using auto-schema detection and explicit facets.
      *
      * @return array<string, mixed>

@@ -70,6 +70,30 @@ class ReindexSearch extends Command
                     $this->line("     <comment>ipconfig /flushdns</comment>");
                 } else {
                     $this->line("✓ DNS resolved to IP: <info>{$resolvedIp}</info>");
+
+                    // Pre-flight health and authorization check
+                    try {
+                        $testClient = new \Typesense\Client(config('scout.typesense.client-settings'));
+                        $health = $testClient->health->retrieve();
+                        if (($health['ok'] ?? false) === true) {
+                            $this->line("✓ Typesense Node Connection: <info>Healthy</info>");
+                        }
+
+                        try {
+                            $testClient->collections->retrieve();
+                            $this->line("✓ API Key Authorization: <info>Admin permissions verified</info>");
+                        } catch (\Throwable $authEx) {
+                            $authMsg = $authEx->getMessage();
+                            if (str_contains($authMsg, 'Forbidden') || str_contains($authMsg, '401') || str_contains($authMsg, '403')) {
+                                $this->warn("⚠ Authorization Warning: Typesense rejected this API key for admin operations.");
+                                $this->line("  Server response: {$authMsg}");
+                                $this->line("  Action required: In Typesense Cloud, ensure you copy the 'Admin API Key' into backend/.env.");
+                                $this->line("  Search-Only API Keys cannot create collections or import documents.");
+                            }
+                        }
+                    } catch (\Throwable $testEx) {
+                        $this->warn("⚠ Pre-flight test note: " . $testEx->getMessage());
+                    }
                 }
             }
             $this->newLine();

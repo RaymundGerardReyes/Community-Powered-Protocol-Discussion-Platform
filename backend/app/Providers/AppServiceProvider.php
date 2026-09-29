@@ -29,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
             ThreadRepositoryInterface::class,
             ThreadRepository::class
         );
+
+        $this->app->singleton(\Typesense\Client::class, function () {
+            $config = config('scout.typesense.client-settings', []);
+            return new \Typesense\Client($config);
+        });
     }
 
     /**
