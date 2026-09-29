@@ -88,7 +88,7 @@ class Thread extends Model
 
         return [
             'id' => (string) $this->id,
-            'protocol_id' => (int) $this->protocol_id,
+            'protocol_id' => (string) $this->protocol_id,
             'user_id' => (int) ($this->user_id ?? 0),
             'author_id' => (int) ($this->user_id ?? 0),
             'author' => $authorName,
@@ -131,7 +131,7 @@ class Thread extends Model
             'name' => $this->searchableAs(),
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
-                ['name' => 'protocol_id', 'type' => 'int32', 'facet' => true],
+                ['name' => 'protocol_id', 'type' => 'string', 'facet' => true],
                 ['name' => 'user_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author_id', 'type' => 'int32', 'optional' => true],
                 ['name' => 'author', 'type' => 'string', 'facet' => true, 'optional' => true],

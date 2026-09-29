@@ -170,7 +170,7 @@ describe('Typesense Collections API Compliance', function () {
         $searchable = $thread->toSearchableArray();
 
         expect($searchable['id'])->toBe('99');
-        expect($searchable['protocol_id'])->toBe(42);
+        expect($searchable['protocol_id'])->toBe('42');
         expect($searchable['title'])->toBe('Recursive SNARK Verification');
         expect($searchable['votes_count'])->toBeInt();
         expect($searchable['replies_count'])->toBeInt();
