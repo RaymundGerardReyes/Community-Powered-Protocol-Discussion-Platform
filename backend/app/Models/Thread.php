@@ -84,6 +84,8 @@ class Thread extends Model
                 : [],
             'is_pinned' => (bool) $this->is_pinned,
             'votes_count' => (int) $this->votes_count,
+            'vote_score' => (int) $this->votes_count,
+            'votes' => (int) $this->votes_count,
             'replies_count' => (int) $this->replies_count,
             'created_at' => $this->created_at ? $this->created_at->timestamp : time(),
         ];
@@ -114,6 +116,8 @@ class Thread extends Model
                 ['name' => 'content', 'type' => 'string'],
                 ['name' => 'tags', 'type' => 'string[]', 'facet' => true, 'optional' => true],
                 ['name' => 'votes_count', 'type' => 'int32'],
+                ['name' => 'vote_score', 'type' => 'int32', 'optional' => true],
+                ['name' => 'votes', 'type' => 'int32', 'optional' => true],
                 ['name' => 'replies_count', 'type' => 'int32'],
                 ['name' => '.*', 'type' => 'auto'],
             ],
