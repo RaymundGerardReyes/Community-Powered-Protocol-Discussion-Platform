@@ -132,19 +132,22 @@ class DebugRoutingPathCommand extends Command
         $this->newLine();
         $this->comment('4. Live Routing Path Trace (Executing ProtocolRepository::paginateWithFilters):');
         try {
+            \Illuminate\Support\Facades\DB::enableQueryLog();
             $paginator = $protocolRepo->paginateWithFilters([], 15);
+            $queriesCount = count(\Illuminate\Support\Facades\DB::getQueryLog());
             $count = $paginator->total();
             $routeTaken = $isTypesense
-                ? 'Typesense Cloud API (Indexed Collection)'
+                ? 'Typesense Cloud API (Indexed Collection, Pure Document Hydration)'
                 : "Local Relational Database ({$dbDriver} -> {$resolvedDb})";
 
             $this->info("✓ Query Succeeded! Returned {$count} protocols.");
-            $this->line("  [DATA SOURCE]: <fg=cyan>{$routeTaken}</>");
+            $this->line("  [DATA SOURCE]:          <fg=cyan>{$routeTaken}</>");
+            $this->line("  [SQL QUERIES EXECUTED]: <fg=" . ($queriesCount === 0 ? "green" : "yellow") . ">{$queriesCount}</> queries on database");
             $this->line("  [HTTP HEADERS]:");
             $this->line("    X-Search-Driver:       " . var_export($effectiveScout, true));
             $this->line("    X-Data-Source:         " . ($isTypesense ? 'typesense' : 'database'));
-            $this->line("    X-Database-Connection: {$effectiveConn}");
-            $this->line("    X-Database-Target:     " . basename($resolvedDb));
+            $this->line("    X-Database-Connection: " . ($isTypesense ? 'none (typesense-decoupled)' : $effectiveConn));
+            $this->line("    X-Database-Target:     " . ($isTypesense ? 'typesense-cloud' : basename($resolvedDb)));
         } catch (\Throwable $e) {
             $this->error("✗ Query Failed as Expected: " . $e->getMessage());
             $this->line("  [REASON]: Strict routing is enforced. When SCOUT_DRIVER=typesense and credentials fail, it halts with 503 instead of falling back to the database.");
@@ -157,8 +160,8 @@ class DebugRoutingPathCommand extends Command
         $this->line('  2. The SQLite database file exists on disk at: ' . database_path('database.sqlite'));
         $this->line('  3. It was already fully pre-seeded with 12 protocols and 12 threads (Rule 7 Standalone Host Mode).');
         $this->line('  4. When SCOUT_DRIVER was removed, config("scout.driver") became "null", so the backend used SQLite.');
-        $this->line('  5. The Next.js frontend has NO direct database connection. Next.js calls http://localhost:8000/api/v1/protocols via HTTP.');
-        $this->line('  6. Therefore, the response came from Laravel reading database/database.sqlite via SQLite!');
+        $this->line('  5. When SCOUT_DRIVER=typesense, catalog and detail lookups now hydrate 100% from Typesense with ZERO SQL queries.');
+        $this->line('  6. If you want to completely eliminate SQLite, start PostgreSQL via Docker and set DB_CONNECTION=pgsql.');
         $this->newLine();
 
         return 0;

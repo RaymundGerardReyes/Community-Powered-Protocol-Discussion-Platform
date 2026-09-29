@@ -351,6 +351,9 @@
   - `toSearchableArray()` on all slugged models (`Protocol`, `Thread`) MUST explicitly include `slug` alongside titles and IDs:
     `'slug' => (string) ($this->slug ?: Str::slug($this->title))`
   - Typesense schemas must declare `['name' => 'slug', 'type' => 'string', 'facet' => true, 'optional' => true]`.
+- **Thread Views Counter & Observability Decoupling:**
+  - When `SCOUT_DRIVER=typesense`, thread view increments (`ThreadService::incrementViews`) must update the Typesense document directly or increment in memory without executing an SQL `UPDATE threads SET views_count = ...` query against SQLite.
+  - Response headers (`X-Database-Connection` and `X-Database-Target`) emitted by `TrackResponseTime` and `debug:routing-path` must report `none (typesense-decoupled)` and `typesense-cloud` when Typesense is active, rather than printing the default SQLite connection name.
 - **POSIX Shell Compatibility for Provisioning Scripts:**
   - In addition to PowerShell scripts (`scripts/provision-db.ps1`), provide POSIX-compatible shell scripts (`scripts/provision-db.sh`) to prevent backslash path escape errors in Git Bash (MINGW64) and Linux environments.
 

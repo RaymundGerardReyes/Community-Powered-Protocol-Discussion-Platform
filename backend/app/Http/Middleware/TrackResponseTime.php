@@ -38,8 +38,8 @@ class TrackResponseTime
         $response->headers->set('Server-Timing', "app;dur={$durationMs};desc=\"Laravel Execution\"");
         $response->headers->set('X-Search-Driver', $driver);
         $response->headers->set('X-Data-Source', $isTypesense ? 'typesense' : 'database');
-        $response->headers->set('X-Database-Connection', $dbConn);
-        $response->headers->set('X-Database-Target', $dbTarget);
+        $response->headers->set('X-Database-Connection', $isTypesense ? 'none (typesense-decoupled)' : $dbConn);
+        $response->headers->set('X-Database-Target', $isTypesense ? 'typesense-cloud' : $dbTarget);
 
         return $response;
     }

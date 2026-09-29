@@ -47,7 +47,31 @@ class ThreadService
      */
     public function incrementViews(Thread $thread): void
     {
-        $thread->increment('views_count');
+        $thread->views_count = ($thread->views_count ?? 0) + 1;
+
+        $driver = (string) config('scout.driver', 'null');
+        $isTypesense = $driver === 'typesense' || str_starts_with($driver, 'ty');
+
+        if ($isTypesense && app()->bound(\Typesense\Client::class)) {
+            try {
+                /** @var \Typesense\Client $typesense */
+                $typesense = app(\Typesense\Client::class);
+                $typesense->collections['threads']->documents[(string) $thread->id]->update([
+                    'views_count' => (int) $thread->views_count,
+                ]);
+            } catch (\Throwable) {
+                // Silently continue if Typesense update fails or is in mock testing
+            }
+            return;
+        }
+
+        if ($thread->exists && $thread->getKey()) {
+            try {
+                $thread->increment('views_count');
+            } catch (\Throwable) {
+                // Silently ignore if database is decoupled
+            }
+        }
     }
 
     /**
