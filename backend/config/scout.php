@@ -173,17 +173,17 @@ return [
 
     'typesense' => [
         'client-settings' => [
-            'api_key' => env('TYPESENSE_API_KEY', env('TYPESENSE_ADMIN_API_KEY', 'xyz')),
+            'api_key' => env('TYPESENSE_API_KEY', 'xyz'),
             'nodes' => [
                 [
-                    'host' => preg_replace('#^https?://#i', '', rtrim(env('TYPESENSE_HOST', 'localhost'), '/')),
+                    'host' => env('TYPESENSE_HOST', 'localhost'),
                     'port' => env('TYPESENSE_PORT', '8108'),
                     'path' => env('TYPESENSE_PATH', ''),
                     'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
                 ],
             ],
             'nearest_node' => [
-                'host' => preg_replace('#^https?://#i', '', rtrim(env('TYPESENSE_HOST', 'localhost'), '/')),
+                'host' => env('TYPESENSE_HOST', 'localhost'),
                 'port' => env('TYPESENSE_PORT', '8108'),
                 'path' => env('TYPESENSE_PATH', ''),
                 'protocol' => env('TYPESENSE_PROTOCOL', 'http'),

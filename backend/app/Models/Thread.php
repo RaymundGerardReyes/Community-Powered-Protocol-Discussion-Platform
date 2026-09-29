@@ -77,7 +77,11 @@ class Thread extends Model
             'id' => (string) $this->id,
             'protocol_id' => (int) $this->protocol_id,
             'title' => $this->title,
+            'body' => $this->content,
             'content' => $this->content,
+            'tags' => ($this->relationLoaded('protocol') && $this->protocol)
+                ? (array) ($this->protocol->metadata['tags'] ?? ($this->protocol->category ? [strtolower($this->protocol->category)] : []))
+                : [],
             'is_pinned' => (bool) $this->is_pinned,
             'votes_count' => (int) $this->votes_count,
             'replies_count' => (int) $this->replies_count,
@@ -98,7 +102,9 @@ class Thread extends Model
                 ['name' => 'id', 'type' => 'string'],
                 ['name' => 'protocol_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'title', 'type' => 'string'],
+                ['name' => 'body', 'type' => 'string'],
                 ['name' => 'content', 'type' => 'string'],
+                ['name' => 'tags', 'type' => 'string[]', 'facet' => true, 'optional' => true],
                 ['name' => 'votes_count', 'type' => 'int32'],
                 ['name' => 'replies_count', 'type' => 'int32'],
                 ['name' => '.*', 'type' => 'auto'],

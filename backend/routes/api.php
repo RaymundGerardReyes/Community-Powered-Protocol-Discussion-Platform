@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\ProtocolController;
 use App\Http\Controllers\Api\V1\ReviewController;
+use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ThreadController;
 use App\Http\Controllers\Api\V1\VoteController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,10 @@ Route::get('/threads/{thread}/comments', [CommentController::class, 'index']);
 
 // Review public endpoints
 Route::get('/protocols/{protocol}/reviews', [ReviewController::class, 'index']);
+
+// Search endpoints
+Route::get('/search/status', [SearchController::class, 'status']);
+Route::post('/search/reindex', [SearchController::class, 'reindex']);
 
 // Authenticated mutations
 Route::middleware('auth:sanctum')->group(function () {

@@ -62,9 +62,22 @@ export async function searchProtocols(query: string) {
     return await typesenseClient
       .collections('protocols')
       .documents()
-      .search({ q: query, query_by: 'title,description', per_page: 20 });
+      .search({ q: query, query_by: 'title,description,tags', per_page: 20 });
   } catch {
     // If Typesense is unreachable or times out, gracefully fall back to Laravel search
+    return null;
+  }
+}
+
+export async function searchThreads(query: string) {
+  if (!typesenseClient) return null; // caller falls back to Laravel
+  try {
+    return await typesenseClient
+      .collections('threads')
+      .documents()
+      .search({ q: query, query_by: 'title,body,content,tags', per_page: 20 });
+  } catch {
+    // If Typesense is unreachable or times out, gracefully fall back
     return null;
   }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   typesenseClient,
   searchProtocols,
+  searchThreads,
   resolveTypesenseConfig,
 } from '@/lib/typesense-client';
 
@@ -10,6 +11,8 @@ describe('typesense-client', () => {
     if (!typesenseClient) {
       const result = await searchProtocols('zk-rollup');
       expect(result).toBeNull();
+      const threadResult = await searchThreads('zk-proof');
+      expect(threadResult).toBeNull();
     } else {
       expect(typesenseClient).toBeDefined();
     }
