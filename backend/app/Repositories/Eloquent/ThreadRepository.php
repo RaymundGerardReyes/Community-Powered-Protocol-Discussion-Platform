@@ -97,12 +97,12 @@ class ThreadRepository implements ThreadRepositoryInterface
                 'replies', 'most_reviewed', 'reviewed' => 'replies_count:desc',
                 'oldest' => 'created_at:asc',
                 'recent', 'most_recent' => 'created_at:desc',
-                default => 'is_pinned:desc,created_at:desc',
+                default => 'created_at:desc',
             };
 
             $searchParams = [
                 'q' => $searchQuery,
-                'query_by' => 'title,body,content,tags',
+                'query_by' => 'title,body',
                 'filter_by' => 'protocol_id:=' . (string) $protocolId,
                 'sort_by' => $sortBy,
                 'page' => $page,

@@ -12,6 +12,20 @@ class StoreVoteRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('type') && ! $this->has('votable_type')) {
+            $merge['votable_type'] = $this->input('type');
+        }
+        if ($this->has('id') && ! $this->has('votable_id')) {
+            $merge['votable_id'] = $this->input('id');
+        }
+        if (! empty($merge)) {
+            $this->merge($merge);
+        }
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
