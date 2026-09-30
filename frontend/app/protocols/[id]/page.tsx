@@ -7,6 +7,7 @@ import { RatingStars } from '@/components/ui/RatingStars';
 import { ReviewList } from '@/features/reviews/components/ReviewList';
 import { CreateReviewForm } from '@/features/reviews/components/CreateReviewForm';
 import { ThreadSection } from '@/features/threads/components/ThreadSection';
+import { VoteButtonWrapper } from '@/features/votes/components/VoteButtonWrapper';
 import type { ApiError } from '@/lib/api-client';
 
 interface PageProps {
@@ -110,12 +111,14 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
           </span>
           <RatingStars rating={protocol.average_rating} />
           <span>{protocol.reviews_count} reviews</span>
-          <span
-            className='font-semibold flex items-center gap-1'
-            style={{ color: 'var(--brand)' }}
-          >
-            ▲ {protocol.votes_count} votes
-          </span>
+          <div className='flex items-center gap-1.5'>
+            <VoteButtonWrapper
+              votableType='protocol'
+              votableId={protocol.id}
+              count={protocol.votes_count}
+              layout='horizontal'
+            />
+          </div>
         </div>
 
         {/* Divider */}

@@ -68,5 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
     // Votes (polymorphic)
+    Route::get('/votes/me', [VoteController::class, 'myVotes']);
     Route::post('/votes', [VoteController::class, 'store']);
 });

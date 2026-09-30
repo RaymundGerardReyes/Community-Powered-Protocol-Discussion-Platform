@@ -7,6 +7,7 @@ interface Props {
   votableType: VotableType;
   votableId: number;
   count: number;
+  currentVote?: 1 | -1 | null;
   queryKey?: unknown[];
   layout?: 'horizontal' | 'vertical';
 }
@@ -15,6 +16,7 @@ export function VoteButtonWrapper({
   votableType,
   votableId,
   count,
+  currentVote,
   queryKey,
   layout = 'horizontal',
 }: Props) {
@@ -22,7 +24,7 @@ export function VoteButtonWrapper({
     <VoteButton
       votableType={votableType}
       votableId={votableId}
-      currentVote={null}
+      currentVote={currentVote}
       count={count}
       queryKey={queryKey}
       layout={layout}

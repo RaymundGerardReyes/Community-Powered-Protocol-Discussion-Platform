@@ -5,7 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as VotesApiModule from '@/features/votes/api';
 
-vi.mock('@/features/votes/api');
+vi.mock('@/features/votes/api', () => ({
+  castVote: vi.fn(),
+  fetchMyVotes: vi.fn().mockResolvedValue({
+    protocol: {},
+    thread: {},
+    comment: {},
+  }),
+}));
 
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({

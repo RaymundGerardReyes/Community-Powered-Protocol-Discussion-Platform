@@ -32,4 +32,16 @@ class VoteController extends Controller
             ->response()
             ->setStatusCode(200);
     }
+
+    /**
+     * Get dictionary of current user's votes across protocols, threads, and comments.
+     */
+    public function myVotes(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $votes = $this->service->getUserVotes($request->user());
+
+        return response()->json([
+            'data' => $votes,
+        ], 200);
+    }
 }

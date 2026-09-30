@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -90,9 +91,23 @@ class VoteService
                 $updateAttributes['score'] = max(0, ($totalVotes * 10) + ($votable->reviews_count * 5));
             }
 
-            $votable->update($updateAttributes);
+            if (method_exists($votable, 'withoutSyncingToSearch')) {
+                $votable->withoutSyncingToSearch(function () use ($votable, $updateAttributes) {
+                    $votable->update($updateAttributes);
+                });
+            } else {
+                $votable->update($updateAttributes);
+            }
 
-            // Dispatch domain event for listeners and search index sync
+            // Invalidate cache immediately so upcoming reads reflect the fresh vote counts
+            if ($votable instanceof Protocol) {
+                Cache::forget('typesense.protocol.doc.' . md5($votable->slug));
+                Cache::forget('typesense.protocol.doc.' . md5((string) $votable->id));
+            } elseif ($votable instanceof Thread) {
+                Cache::forget('typesense.threads.p.' . $votable->protocol_id);
+            }
+
+            // Dispatch domain event for background search index synchronization
             event(new VoteCast($user, $votable, $currentVote, $action));
 
             // Structured logging
@@ -111,5 +126,36 @@ class VoteService
                 'votes_count' => $totalVotes,
             ];
         });
+    }
+
+    /**
+     * Get dictionary of all votes cast by the specified user indexed by entity type.
+     *
+     * @return array<string, array<string, int>>
+     */
+    public function getUserVotes(User $user): array
+    {
+        $votes = Vote::where('user_id', $user->id)->get();
+
+        $map = [
+            'protocol' => [],
+            'thread' => [],
+            'comment' => [],
+        ];
+
+        foreach ($votes as $vote) {
+            $shorthand = match ($vote->votable_type) {
+                Protocol::class, 'protocol' => 'protocol',
+                Thread::class, 'thread' => 'thread',
+                Comment::class, 'comment' => 'comment',
+                default => null,
+            };
+
+            if ($shorthand) {
+                $map[$shorthand][(string) $vote->votable_id] = (int) $vote->value;
+            }
+        }
+
+        return $map;
     }
 }

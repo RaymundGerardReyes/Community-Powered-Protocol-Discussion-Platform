@@ -1,7 +1,20 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/features/auth/AuthContext';
 import { ProtocolCard } from '@/features/protocols/components/ProtocolCard';
 import type { Protocol } from '@/types';
+
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{ui}</AuthProvider>
+    </QueryClientProvider>,
+  );
+}
 
 const mockProtocol: Protocol = {
   id: 1,
@@ -28,31 +41,31 @@ const mockProtocol: Protocol = {
 
 describe('ProtocolCard', () => {
   it('renders protocol title and author', () => {
-    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    const { getByText } = renderWithClient(<ProtocolCard protocol={mockProtocol} />);
     expect(getByText('Consensus Layer Upgrade')).toBeDefined();
     expect(getByText('Satoshi N.')).toBeDefined();
   });
 
   it('renders category and status badges', () => {
-    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    const { getByText } = renderWithClient(<ProtocolCard protocol={mockProtocol} />);
     expect(getByText('infrastructure')).toBeDefined();
     expect(getByText('published')).toBeDefined();
   });
 
   it('renders rating and vote counts', () => {
-    const { getByText } = render(<ProtocolCard protocol={mockProtocol} />);
+    const { getByText } = renderWithClient(<ProtocolCard protocol={mockProtocol} />);
     expect(getByText(/8 reviews/i)).toBeDefined();
     expect(getByText(/42/)).toBeDefined();
   });
 
   it('links to the correct protocol details page', () => {
-    const { getByRole } = render(<ProtocolCard protocol={mockProtocol} />);
+    const { getByRole } = renderWithClient(<ProtocolCard protocol={mockProtocol} />);
     const link = getByRole('link');
     expect(link.getAttribute('href')).toBe('/protocols/consensus-layer-upgrade');
   });
 
   it('implements accessible stretched-link overlay for full-card clickable surface', () => {
-    const { container, getByRole } = render(<ProtocolCard protocol={mockProtocol} />);
+    const { container, getByRole } = renderWithClient(<ProtocolCard protocol={mockProtocol} />);
     const article = container.querySelector('article');
     expect(article).toHaveClass('relative');
     expect(article).toHaveClass('group');

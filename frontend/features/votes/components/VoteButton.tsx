@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import { useVote } from '../hooks/useVote';
+import { useUserVotes } from '../hooks/useUserVotes';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { VoteResponse } from '@/types';
 import type { VotableType } from '../api';
@@ -10,7 +11,7 @@ import type { VotableType } from '../api';
 export interface VoteButtonProps {
   votableType: VotableType;
   votableId: number;
-  currentVote: 1 | -1 | null;
+  currentVote?: 1 | -1 | null;
   count: number;
   queryKey?: unknown[];
   onSuccess?: (result: VoteResponse) => void;
@@ -20,7 +21,7 @@ export interface VoteButtonProps {
 export function VoteButton({
   votableType,
   votableId,
-  currentVote,
+  currentVote = null,
   count,
   queryKey,
   onSuccess,
@@ -28,13 +29,27 @@ export function VoteButton({
 }: VoteButtonProps) {
   const { user, openAuthModal } = useAuth();
   const { mutate, isPending } = useVote();
+  const { data: userVotes } = useUserVotes();
+
+  const normalizedType = (votableType
+    .replace(/^App\\Models\\/i, '')
+    .toLowerCase()) as 'protocol' | 'thread' | 'comment';
+
+  const userVoteFromCache = user
+    ? (userVotes?.[normalizedType]?.[String(votableId)] as 1 | -1 | undefined)
+    : undefined;
+
   const [authPrompt, setAuthPrompt] = useState(false);
-  const [activeVote, setActiveVote] = useState<1 | -1 | null>(currentVote);
+  const [activeVote, setActiveVote] = useState<1 | -1 | null>(userVoteFromCache ?? currentVote ?? null);
   const [displayedCount, setDisplayedCount] = useState(count);
 
   useEffect(() => {
-    setActiveVote(currentVote);
-  }, [currentVote]);
+    if (userVoteFromCache !== undefined) {
+      setActiveVote(userVoteFromCache);
+    } else if (currentVote !== undefined) {
+      setActiveVote(currentVote);
+    }
+  }, [userVoteFromCache, currentVote]);
 
   useEffect(() => {
     setDisplayedCount(count);

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { RatingStars } from '@/components/ui/RatingStars';
+import { VoteButtonWrapper } from '@/features/votes/components/VoteButtonWrapper';
 import type { Protocol } from '@/types';
 
 const STATUS_VARIANT: Record<Protocol['status'], 'success' | 'warning' | 'danger'> = {
@@ -69,12 +70,14 @@ export function ProtocolCard({ protocol }: { protocol: Protocol }) {
         <div className='flex items-center gap-3'>
           <RatingStars rating={protocol.average_rating} size='sm' />
           <span>{protocol.reviews_count} reviews</span>
-          <span
-            className='flex items-center gap-0.5 font-semibold'
-            style={{ color: 'var(--brand)' }}
-          >
-            ▲ {protocol.votes_count}
-          </span>
+          <div className='pointer-events-auto'>
+            <VoteButtonWrapper
+              votableType='protocol'
+              votableId={protocol.id}
+              count={protocol.votes_count}
+              layout='horizontal'
+            />
+          </div>
         </div>
       </div>
     </article>

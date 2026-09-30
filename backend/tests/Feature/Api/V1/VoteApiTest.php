@@ -179,4 +179,53 @@ class VoteApiTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_authenticated_user_can_retrieve_active_votes_map(): void
+    {
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create();
+        $thread = Thread::factory()->create();
+        $comment = Comment::factory()->create();
+
+        // Cast votes across multiple entities
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/votes', [
+            'votable_type' => 'protocol',
+            'votable_id' => $protocol->id,
+            'value' => 1,
+        ]);
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/votes', [
+            'votable_type' => 'thread',
+            'votable_id' => $thread->id,
+            'value' => -1,
+        ]);
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/votes', [
+            'votable_type' => 'comment',
+            'votable_id' => $comment->id,
+            'value' => 1,
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/votes/me');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'protocol' => [
+                        (string) $protocol->id => 1,
+                    ],
+                    'thread' => [
+                        (string) $thread->id => -1,
+                    ],
+                    'comment' => [
+                        (string) $comment->id => 1,
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_unauthenticated_user_cannot_access_my_votes(): void
+    {
+        $response = $this->getJson('/api/v1/votes/me');
+        $response->assertStatus(401);
+    }
 }
