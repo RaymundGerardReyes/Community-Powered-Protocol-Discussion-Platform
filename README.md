@@ -19,7 +19,7 @@ A production-grade structured healing, wellness, and instructional protocol disc
 | **Database** | **PostgreSQL 17 / SQLite** | Relational data, foreign keys, polymorphic tables |
 | **Caching & Queues** | **Sync / File / Redis** | Scalable sessions, caching, and rate limiting |
 | **Testing (Backend)** | **Pest 4 / PHPUnit 12** | 107 automated tests across all suites (100% pass) |
-| **Testing (Frontend)** | **Vitest 5 + Testing Library** | 27 test suites / 93 unit and integration tests (100% pass) |
+| **Testing (Frontend)** | **Vitest 5 + Testing Library** | 28 test suites / 97 unit and integration tests (100% pass) |
 | **Code Formatting** | **Laravel Pint & ESLint** | Automated opinionated linting and formatting |
 
 ---

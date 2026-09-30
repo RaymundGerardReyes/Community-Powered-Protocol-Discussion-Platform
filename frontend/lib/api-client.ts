@@ -16,8 +16,8 @@ export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
   withCredentials: true,
-  httpAgent: isServer ? new http.Agent({ keepAlive: true, maxSockets: 50 }) : undefined,
-  httpsAgent: isServer ? new https.Agent({ keepAlive: true, maxSockets: 50 }) : undefined,
+  httpAgent: isServer ? new http.Agent({ keepAlive: false }) : undefined,
+  httpsAgent: isServer ? new https.Agent({ keepAlive: false }) : undefined,
 });
 
 
@@ -42,7 +42,11 @@ apiClient.interceptors.response.use(
       status: error.response?.status ?? 0,
     };
     if (process.env.NODE_ENV === 'development') {
-      console.error('[api-client]', apiError);
+      if (apiError.status >= 500) {
+        console.error('[api-client]', apiError);
+      } else {
+        console.warn('[api-client]', `${apiError.status}: ${apiError.message}`);
+      }
     }
     return Promise.reject(apiError);
   },

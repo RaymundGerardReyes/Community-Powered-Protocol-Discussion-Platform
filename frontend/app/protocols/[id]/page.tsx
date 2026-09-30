@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchProtocol, fetchProtocolThreads, fetchProtocolReviews } from '@/features/protocols/api';
@@ -15,10 +15,14 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const getCachedProtocol = cache(async (id: string) => {
+  return await fetchProtocol(id);
+});
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   try {
-    const protocol = await fetchProtocol(id);
+    const protocol = await getCachedProtocol(id);
     return { title: protocol.title, description: protocol.description.slice(0, 160) };
   } catch {
     return { title: 'Protocol' };
@@ -36,7 +40,7 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
 
   let protocol;
   try {
-    protocol = await fetchProtocol(id);
+    protocol = await getCachedProtocol(id);
   } catch (err) {
     const apiErr = err as ApiError;
     if (apiErr.status === 404) notFound();
@@ -177,7 +181,11 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
             </span>
           </h2>
         </div>
-        <CreateReviewForm protocolId={protocol.id} />
+        <CreateReviewForm
+          protocolId={protocol.id}
+          authorId={protocol.author?.id}
+          existingReviewerIds={reviews.map((r) => r.author?.id).filter((id): id is number => typeof id === 'number')}
+        />
         <div className='card-flat p-5'>
           <ReviewList reviews={reviews} />
         </div>

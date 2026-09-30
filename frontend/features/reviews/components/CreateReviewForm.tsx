@@ -8,9 +8,11 @@ import { Spinner } from '@/components/ui/Spinner';
 
 interface CreateReviewFormProps {
   protocolId: number;
+  authorId?: number;
+  existingReviewerIds?: number[];
 }
 
-export function CreateReviewForm({ protocolId }: CreateReviewFormProps) {
+export function CreateReviewForm({ protocolId, authorId, existingReviewerIds = [] }: CreateReviewFormProps) {
   const router = useRouter();
   const { user, openAuthModal } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -20,9 +22,15 @@ export function CreateReviewForm({ protocolId }: CreateReviewFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isAuthor = Boolean(user && authorId && user.id === authorId);
+  const hasReviewed = Boolean(user && existingReviewerIds.includes(user.id));
+
   function handleOpen() {
     if (!user) {
       openAuthModal();
+      return;
+    }
+    if (isAuthor || hasReviewed) {
       return;
     }
     setIsOpen(true);
@@ -60,6 +68,42 @@ export function CreateReviewForm({ protocolId }: CreateReviewFormProps) {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isAuthor) {
+    return (
+      <div
+        className="mb-4 rounded-xl p-3.5 text-xs flex items-center gap-2.5"
+        style={{
+          background: 'var(--surface-card)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <svg className="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>You are the author of this protocol. Peer reviews are reserved for external clinical and community reviewers.</span>
+      </div>
+    );
+  }
+
+  if (hasReviewed) {
+    return (
+      <div
+        className="mb-4 rounded-xl p-3.5 text-xs flex items-center gap-2.5"
+        style={{
+          background: 'var(--surface-card)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <svg className="h-4 w-4 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+        <span>You have already submitted a peer review for this protocol. Thank you for contributing your clinical feedback!</span>
+      </div>
+    );
   }
 
   if (!isOpen) {

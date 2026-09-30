@@ -257,6 +257,17 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                 $protocol->setRelation('threads', collect([]));
             }
 
+            // Load associated reviews with reviewer profiles for instant client hydration
+            try {
+                $reviews = \App\Models\Review::where('protocol_id', $protocol->id)
+                    ->with('user')
+                    ->latest()
+                    ->get();
+                $protocol->setRelation('reviews', $reviews);
+            } catch (\Throwable) {
+                $protocol->setRelation('reviews', collect([]));
+            }
+
             return $protocol;
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;

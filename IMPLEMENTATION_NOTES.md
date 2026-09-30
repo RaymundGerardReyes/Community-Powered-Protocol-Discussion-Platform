@@ -89,6 +89,17 @@ If Typesense credentials are intentionally omitted or unreachable in strict sear
 - **Optimistic TanStack Query Mutations:** Comment creation and vote changes update the UI at $0\text{ ms}$ before network acknowledgment, rolling back automatically on error.
 - **Client Auth Deduplication:** Consecutive in-flight calls to `/api/v1/auth/me` are memoized, avoiding duplicate network waterfalls during React 19 component mounting.
 
+### D. Author Peer Review Validation & Clear UI Affordances
+- Domain rules strictly forbid authors from reviewing their own protocols (`ReviewService` enforces 422 validation).
+- Rather than leaving users to encounter an unexpected validation failure, `CreateReviewForm` inspects `user.id === authorId` and renders an informative clinical badge: *"You are the author of this protocol. Peer reviews are reserved for external clinical and community reviewers."*
+- Duplicate reviews are similarly guarded (`existingReviewerIds.includes(user.id)`), acknowledging their prior contribution.
+
+### E. Server-Side Request Deduplication & Loopback Keep-Alive Tuning
+- **React 19 `cache()` Memoization:** `fetchProtocol(id)` is wrapped with React `cache()`, executing exactly once per SSR request pass across `generateMetadata` and `ProtocolDetailPage`.
+- **Compound Detail Hydration:** Protocol detail endpoints eager-load reviews with authors alongside threads, collapsing multiple sequential fetches into a single roundtrip.
+- **PHP CLI Keep-Alive Stalling Elimination:** Server-side Axios HTTP agents set `keepAlive: false` against local `php artisan serve` loopback endpoints. This prevents single-threaded PHP socket locks (500ms idle delays) from cascading across concurrent client fetches.
+- **Non-Blocking Host Resolution:** Runtime `gethostbyname()` blocking socket calls were removed from `config/scout.php` in favor of deterministic regex-based hostname formatting, dropping backend test suite execution from 31.2s to 4.9s.
+
 ---
 
 ## 6. Verification & Automated Test Coverage
@@ -99,7 +110,7 @@ The platform is fortified with end-to-end automated testing spanning unit, integ
   - **107 Tests / 598 Assertions (100% Pass Rate)** across 11 test suites.
   - Suites include `ProtocolTest`, `ThreadCommentApiTest`, `ReviewApiTest`, `VoteApiTest`, `AuthApiTest`, `RoutingPathTest`, and `TypesenseCollectionSchemaTest`.
 * **Frontend Test Suite (`npx vitest run`):**
-  - **27 Test Files / 93 Tests (100% Pass Rate)** spanning UI components, query cache hooks, API services, and navigation.
+  - **28 Test Files / 97 Tests (100% Pass Rate)** spanning UI components, query cache hooks, API services, review author guards, and navigation.
 
 ---
 

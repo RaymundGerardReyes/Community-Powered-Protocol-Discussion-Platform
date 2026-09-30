@@ -205,49 +205,20 @@ return [
         $originalHost = $cleanHost;
 
         if ($cleanHost !== 'localhost' && $cleanHost !== '127.0.0.1' && !empty($cleanHost)) {
-            // Direct DNS check
-            if (gethostbyname($cleanHost) !== $cleanHost) {
-                $hostStatus = 'resolved_direct';
+            // Non-blocking syntactic correction for Typesense Cloud host patterns
+            if (preg_match('/^[a-z0-9]{10,25}$/i', $cleanHost)) {
+                $cleanHost = $cleanHost . '-1.a1.typesense.net';
+                $hostStatus = 'auto_corrected';
+            } elseif (str_ends_with($cleanHost, 'typesense.net') && !preg_match('/\.a[0-9]\./i', $cleanHost)) {
+                $withA1 = preg_replace('/\.typesense\.net$/i', '.a1.typesense.net', $cleanHost);
+                if (!str_contains($withA1, '-1.')) {
+                    $cleanHost = preg_replace('/^([a-z0-9]+)(\.a1\.typesense\.net)$/i', '$1-1$2', $withA1);
+                } else {
+                    $cleanHost = $withA1;
+                }
+                $hostStatus = 'auto_corrected';
             } else {
-                // Generate candidate variants for Typesense Cloud
-                $candidates = [];
-
-                // Case A: User pasted only the Cluster ID (e.g. 10-25 alphanumeric chars without dots)
-                if (preg_match('/^[a-z0-9]{10,25}$/i', $cleanHost)) {
-                    $candidates[] = $cleanHost . '-1.a1.typesense.net';
-                    $candidates[] = $cleanHost . '.a1.typesense.net';
-                }
-
-                // Case B: Host ends in typesense.net
-                if (str_ends_with($cleanHost, 'typesense.net')) {
-                    // Sub-case: Missing .a1. or .a[0-9].
-                    if (!preg_match('/\.a[0-9]\./i', $cleanHost)) {
-                        $withA1 = preg_replace('/\.typesense\.net$/i', '.a1.typesense.net', $cleanHost);
-                        $candidates[] = $withA1;
-                        if (!str_contains($withA1, '-1.')) {
-                            $candidates[] = preg_replace('/^([a-z0-9]+)(\.a1\.typesense\.net)$/i', '$1-1$2', $withA1);
-                        }
-                    }
-
-                    // Sub-case: Toggle -1 suffix
-                    if (preg_match('/^([a-z0-9]+)-1(\..+)$/i', $cleanHost, $m)) {
-                        $candidates[] = $m[1] . $m[2];
-                    } elseif (preg_match('/^([a-z0-9]+)(\.a[0-9]\.typesense\.net)$/i', $cleanHost, $m)) {
-                        $candidates[] = $m[1] . '-1' . $m[2];
-                    }
-                }
-
-                foreach ($candidates as $candidate) {
-                    if (gethostbyname($candidate) !== $candidate) {
-                        $cleanHost = $candidate;
-                        $hostStatus = 'auto_corrected';
-                        break;
-                    }
-                }
-
-                if ($hostStatus !== 'auto_corrected') {
-                    $hostStatus = 'unresolved';
-                }
+                $hostStatus = 'resolved_direct';
             }
         }
 
@@ -298,15 +269,9 @@ return [
                         'protocol' => $protocol,
                     ],
                 ],
-                'nearest_node' => [
-                    'host' => $cleanHost,
-                    'port' => $port,
-                    'path' => env('TYPESENSE_PATH', ''),
-                    'protocol' => $protocol,
-                ],
-                'connection_timeout_seconds' => (int) env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 10),
+                'connection_timeout_seconds' => (int) env('TYPESENSE_CONNECTION_TIMEOUT_SECONDS', 3),
                 'healthcheck_interval_seconds' => (int) env('TYPESENSE_HEALTHCHECK_INTERVAL_SECONDS', 30),
-                'num_retries' => (int) env('TYPESENSE_NUM_RETRIES', 3),
+                'num_retries' => (int) env('TYPESENSE_NUM_RETRIES', 1),
                 'retry_interval_seconds' => (int) env('TYPESENSE_RETRY_INTERVAL_SECONDS', 1),
             ],
             'model-settings' => [],
