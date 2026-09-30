@@ -6,6 +6,7 @@ use App\Models\Protocol;
 use App\Models\Thread;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -31,6 +32,10 @@ class ThreadService
                 'content' => $data['content'],
                 'is_pinned' => $data['is_pinned'] ?? false,
             ]);
+
+            Cache::forget('typesense.threads.p.' . $protocol->id);
+            Cache::forget('typesense.protocol.doc.' . md5($protocol->slug));
+            Cache::forget('typesense.protocol.doc.' . md5((string) $protocol->id));
 
             Log::info('thread.created', [
                 'thread_id' => $thread->id,
@@ -89,6 +94,8 @@ class ThreadService
 
         $thread->update($data);
 
+        Cache::forget('typesense.threads.p.' . $thread->protocol_id);
+
         Log::info('thread.updated', [
             'thread_id' => $thread->id,
             'user_id' => $user->id,
@@ -110,7 +117,10 @@ class ThreadService
 
         return DB::transaction(function () use ($thread, $user) {
             $id = $thread->id;
+            $protocolId = $thread->protocol_id;
             $deleted = (bool) $thread->delete();
+
+            Cache::forget('typesense.threads.p.' . $protocolId);
 
             Log::info('thread.deleted', [
                 'thread_id' => $id,

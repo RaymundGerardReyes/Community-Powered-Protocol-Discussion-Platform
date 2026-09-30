@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/AuthContext';
 import { createThread } from '@/features/threads/api';
 import { Spinner } from '@/components/ui/Spinner';
+import type { Thread } from '@/types';
 
 interface CreateThreadFormProps {
   protocolId: number;
+  onThreadCreated?: (thread: Thread) => void;
 }
 
-export function CreateThreadForm({ protocolId }: CreateThreadFormProps) {
+export function CreateThreadForm({ protocolId, onThreadCreated }: CreateThreadFormProps) {
   const router = useRouter();
   const { user, openAuthModal } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,7 +45,7 @@ export function CreateThreadForm({ protocolId }: CreateThreadFormProps) {
     setError(null);
 
     try {
-      await createThread({
+      const newThread = await createThread({
         protocol_id: protocolId,
         title: title.trim(),
         content: content.trim(),
@@ -52,6 +54,7 @@ export function CreateThreadForm({ protocolId }: CreateThreadFormProps) {
       setTitle('');
       setContent('');
       setIsOpen(false);
+      onThreadCreated?.(newThread);
       router.refresh();
     } catch (err: unknown) {
       const apiErr = err as { errors?: Record<string, string[]>; message?: string };

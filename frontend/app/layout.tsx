@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/lib/query-client';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { NavAuth } from '@/features/auth/NavAuth';
 import Link from 'next/link';
-
-const geist = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -22,8 +16,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang='en' className={`${geist.variable} h-full antialiased`} data-scroll-behavior='smooth'>
-      <body className='min-h-full flex flex-col' style={{ background: 'var(--background)' }}>
+    <html lang='en' className='h-full antialiased' data-scroll-behavior='smooth'>
+      <body className='min-h-full flex flex-col font-sans' style={{ background: 'var(--background)' }}>
         <Providers>
           <AuthProvider>
             {/* ── Header ──────────────────────────────────────────────────── */}

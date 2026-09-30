@@ -1,4 +1,4 @@
-import { Suspense, cache } from 'react';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchProtocol, fetchProtocolThreads, fetchProtocolReviews } from '@/features/protocols/api';
@@ -6,9 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { ReviewList } from '@/features/reviews/components/ReviewList';
 import { CreateReviewForm } from '@/features/reviews/components/CreateReviewForm';
-import { ThreadCard } from '@/features/threads/components/ThreadCard';
-import { CreateThreadForm } from '@/features/threads/components/CreateThreadForm';
-import { Spinner } from '@/components/ui/Spinner';
+import { ThreadSection } from '@/features/threads/components/ThreadSection';
 import type { ApiError } from '@/lib/api-client';
 
 interface PageProps {
@@ -133,40 +131,7 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
       </div>
 
       {/* ── Discussion Threads ───────────────────────────────────────── */}
-      <section className='mb-10'>
-        <div className='flex items-center justify-between mb-4'>
-          <h2 className='section-title mb-0'>
-            Discussion Threads
-            <span
-              className='badge badge-info ml-2'
-              style={{ borderRadius: '999px', verticalAlign: 'middle' }}
-            >
-              {threads.length}
-            </span>
-          </h2>
-        </div>
-        <CreateThreadForm protocolId={protocol.id} />
-        <Suspense fallback={<Spinner />}>
-          {threads.length > 0 ? (
-            <ul className='space-y-3'>
-              {threads.map((thread) => (
-                <li key={thread.id}><ThreadCard thread={thread} /></li>
-              ))}
-            </ul>
-          ) : (
-            <div
-              className='rounded-xl p-8 text-center text-sm italic'
-              style={{
-                background: 'var(--surface-card)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-              }}
-            >
-              No discussion threads yet.
-            </div>
-          )}
-        </Suspense>
-      </section>
+      <ThreadSection protocolId={protocol.id} initialThreads={threads} />
 
       {/* ── Peer Reviews ─────────────────────────────────────────────── */}
       <section>

@@ -224,7 +224,7 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     return $typesense->collections['threads']->documents->search([
                         'q' => '*',
                         'filter_by' => 'protocol_id:=' . (string) $protocol->id,
-                        'sort_by' => 'votes_count:desc',
+                        'sort_by' => 'created_at:desc',
                         'per_page' => 25,
                     ]);
                 };

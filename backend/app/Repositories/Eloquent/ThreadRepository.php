@@ -93,8 +93,8 @@ class ThreadRepository implements ThreadRepositoryInterface
             $page = (int) ($filters['page'] ?? request('page', 1));
             $searchQuery = ! empty($filters['search']) ? $filters['search'] : (! empty($filters['title']) ? $filters['title'] : '*');
             $sortBy = match ($filters['sort'] ?? null) {
-                'top', 'upvoted', 'votes' => 'votes_count:desc',
-                'replies', 'most_reviewed', 'reviewed' => 'replies_count:desc',
+                'top', 'upvoted', 'votes' => 'vote_score:desc',
+                'replies', 'most_reviewed', 'reviewed' => 'comment_count:desc',
                 'oldest' => 'created_at:asc',
                 'recent', 'most_recent' => 'created_at:desc',
                 default => 'created_at:desc',
