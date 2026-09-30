@@ -21,3 +21,14 @@ export async function castVote(payload: {
   );
   return data.data;
 }
+
+export interface UserVotesMap {
+  protocol: Record<string, number>;
+  thread: Record<string, number>;
+  comment: Record<string, number>;
+}
+
+export async function fetchMyVotes(): Promise<UserVotesMap> {
+  const { data } = await apiClient.get<{ data: UserVotesMap }>('/api/v1/votes/me');
+  return data.data;
+}
