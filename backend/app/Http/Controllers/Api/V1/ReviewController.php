@@ -44,6 +44,16 @@ class ReviewController extends Controller
     }
 
     /**
+     * Update an existing review.
+     */
+    public function update(\App\Http\Requests\UpdateReviewRequest $request, Review $review): ReviewResource
+    {
+        $updated = $this->service->update($review, $request->user(), $request->validated());
+
+        return new ReviewResource($updated->load('user'));
+    }
+
+    /**
      * Remove the specified review.
      */
     public function destroy(Request $request, Review $review): JsonResponse

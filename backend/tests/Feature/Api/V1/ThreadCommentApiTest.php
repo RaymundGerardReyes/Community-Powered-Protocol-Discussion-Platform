@@ -331,4 +331,43 @@ class ThreadCommentApiTest extends TestCase
         // Jobs has 0 replies
         $this->assertEmpty($aReplies[1]['replies']);
     }
+
+    public function test_authenticated_user_can_update_own_comment(): void
+    {
+        $user = User::factory()->create();
+        $thread = Thread::factory()->create();
+        $comment = Comment::factory()->create([
+            'thread_id' => $thread->id,
+            'user_id' => $user->id,
+            'content' => 'Initial comment content',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->putJson("/api/v1/comments/{$comment->id}", [
+                'content' => 'Updated comment with refined clinical citations.',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.content', 'Updated comment with refined clinical citations.');
+
+        $this->assertSame('Updated comment with refined clinical citations.', $comment->fresh()->content);
+    }
+
+    public function test_user_cannot_update_others_comment(): void
+    {
+        $author = User::factory()->create();
+        $stranger = User::factory()->create();
+        $thread = Thread::factory()->create();
+        $comment = Comment::factory()->create([
+            'thread_id' => $thread->id,
+            'user_id' => $author->id,
+        ]);
+
+        $response = $this->actingAs($stranger, 'sanctum')
+            ->putJson("/api/v1/comments/{$comment->id}", [
+                'content' => 'Unauthorized overwrite attempt',
+            ]);
+
+        $response->assertStatus(403);
+    }
 }

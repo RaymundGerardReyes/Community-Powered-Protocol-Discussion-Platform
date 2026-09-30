@@ -63,6 +63,16 @@ class CommentController extends Controller
     }
 
     /**
+     * Update an existing comment.
+     */
+    public function update(\App\Http\Requests\UpdateCommentRequest $request, Comment $comment): CommentResource
+    {
+        $updated = $this->service->update($comment, $request->user(), $request->validated());
+
+        return new CommentResource($updated->load('user'));
+    }
+
+    /**
      * Remove the specified comment.
      */
     public function destroy(Request $request, Comment $comment): JsonResponse

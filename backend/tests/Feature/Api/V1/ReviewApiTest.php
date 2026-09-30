@@ -175,4 +175,48 @@ class ReviewApiTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_authenticated_peer_reviewer_can_update_own_review(): void
+    {
+        $author = User::factory()->create();
+        $reviewer = User::factory()->create();
+        $protocol = Protocol::factory()->create(['user_id' => $author->id]);
+        $review = Review::factory()->create([
+            'protocol_id' => $protocol->id,
+            'user_id' => $reviewer->id,
+            'rating' => 4,
+            'summary' => 'Initial review summary',
+        ]);
+
+        $response = $this->actingAs($reviewer, 'sanctum')
+            ->putJson("/api/v1/reviews/{$review->id}", [
+                'rating' => 5,
+                'summary' => 'Updated review with full endorsement',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.rating', 5)
+            ->assertJsonPath('data.summary', 'Updated review with full endorsement');
+
+        $this->assertSame(5, $review->fresh()->rating);
+    }
+
+    public function test_user_cannot_update_others_review(): void
+    {
+        $author = User::factory()->create();
+        $reviewer = User::factory()->create();
+        $stranger = User::factory()->create();
+        $protocol = Protocol::factory()->create(['user_id' => $author->id]);
+        $review = Review::factory()->create([
+            'protocol_id' => $protocol->id,
+            'user_id' => $reviewer->id,
+        ]);
+
+        $response = $this->actingAs($stranger, 'sanctum')
+            ->putJson("/api/v1/reviews/{$review->id}", [
+                'summary' => 'Malicious overwrite attempt',
+            ]);
+
+        $response->assertStatus(403);
+    }
 }

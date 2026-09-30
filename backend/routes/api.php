@@ -59,10 +59,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Comments
     Route::post('/threads/{thread}/comments', [CommentController::class, 'store']);
+    Route::put('/comments/{comment}', [CommentController::class, 'update']);
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
 
     // Reviews
     Route::post('/protocols/{protocol}/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{review}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
     // Votes (polymorphic)

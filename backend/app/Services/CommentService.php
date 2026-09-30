@@ -51,6 +51,31 @@ class CommentService
     }
 
     /**
+     * Update an existing comment.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws AuthorizationException
+     */
+    public function update(Comment $comment, User $user, array $data): Comment
+    {
+        if ($comment->user_id !== $user->id) {
+            throw new AuthorizationException('You are not authorized to update this comment.');
+        }
+
+        return DB::transaction(function () use ($comment, $data) {
+            $comment->update($data);
+
+            Log::info('comment.updated', [
+                'comment_id' => $comment->id,
+                'user_id' => $comment->user_id,
+            ]);
+
+            return $comment;
+        });
+    }
+
+    /**
      * Delete a comment and decrement thread replies count.
      *
      * @throws AuthorizationException

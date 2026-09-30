@@ -96,7 +96,7 @@ class ProtocolRepository implements ProtocolRepositoryInterface
 
         try {
             $page = (int) ($filters['page'] ?? request('page', 1));
-            $searchQuery = ! empty($filters['search']) ? $filters['search'] : '*';
+            $searchQuery = ! empty($filters['search']) ? $filters['search'] : (! empty($filters['title']) ? $filters['title'] : '*');
 
             $filterBy = [];
             if (! empty($filters['status'])) {
@@ -110,10 +110,11 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             }
 
             $sortBy = match ($filters['sort'] ?? null) {
-                'top', 'upvoted' => 'votes_count:desc',
-                'rating' => 'average_rating:desc',
-                'reviews' => 'reviews_count:desc',
+                'top', 'upvoted', 'votes', 'most_upvoted' => 'votes_count:desc',
+                'rating', 'highest_rated' => 'average_rating:desc',
+                'reviews', 'most_reviewed', 'reviewed' => 'reviews_count:desc',
                 'oldest' => 'created_at:asc',
+                'recent', 'most_recent', 'created_at' => 'created_at:desc',
                 default => 'created_at:desc',
             };
 
