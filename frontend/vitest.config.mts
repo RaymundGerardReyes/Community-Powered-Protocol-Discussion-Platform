@@ -13,6 +13,10 @@ export default defineConfig({
       'tests/integration/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    pool: 'forks',
+    forks: {
+      singleFork: true,
+    },
   },
   resolve: {
     alias: {

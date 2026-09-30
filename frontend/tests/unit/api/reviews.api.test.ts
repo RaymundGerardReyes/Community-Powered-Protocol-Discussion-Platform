@@ -34,7 +34,12 @@ describe('Reviews API Service', () => {
 
     const result = await createReview(payload);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/reviews', payload);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/protocols/1/reviews', {
+      rating: 5,
+      feedback: 'Excellent security considerations.',
+      summary: 'Excellent security considerations.',
+      verdict: undefined,
+    });
     expect(result).toEqual(mockCreatedReview);
   });
 });

@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/Spinner';
 
 export const metadata: Metadata = {
   title: 'Protocols',
-  description: 'Browse and discover community-powered Web3 protocol standards.',
+  description: 'Browse and discover community-powered healing, wellness, and instructional protocols.',
 };
 
 interface PageProps {
@@ -27,7 +27,7 @@ export default async function ProtocolsPage({ searchParams }: PageProps) {
           Protocols
         </h1>
         <p className='mt-2 text-sm' style={{ color: 'var(--text-secondary)' }}>
-          Discover, discuss, and vote on community-powered Web3 protocol standards.
+          Discover, discuss, and vote on community-powered healing, wellness, and instructional protocols.
         </p>
       </div>
 

@@ -16,15 +16,22 @@ use Typesense\Client as TypesenseClient;
  */
 class ThreadRepository implements ThreadRepositoryInterface
 {
+    private bool $hasExplicitClient = false;
+
     public function __construct(
         protected ?TypesenseClient $typesense = null
     ) {
+        $this->hasExplicitClient = func_num_args() > 0;
     }
 
     protected function getTypesense(): ?TypesenseClient
     {
-        if ($this->typesense !== null) {
+        if ($this->hasExplicitClient) {
             return $this->typesense;
+        }
+
+        if (! config('scout.typesense.is_configured', false)) {
+            return null;
         }
 
         if (! app()->bound(TypesenseClient::class)) {

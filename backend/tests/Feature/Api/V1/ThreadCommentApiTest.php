@@ -80,7 +80,7 @@ class ThreadCommentApiTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'protocol_id', 'title', 'slug', 'content', 'views_count', 'replies_count'],
+                    '*' => ['id', 'protocol_id', 'title', 'slug', 'content', 'body', 'views_count', 'replies_count'],
                 ],
                 'meta',
             ]);
@@ -142,6 +142,28 @@ class ThreadCommentApiTest extends TestCase
             'user_id' => $user->id,
             'title' => 'Proposal Discussion for Tokenomics',
         ]);
+    }
+
+    public function test_authenticated_user_can_create_thread_using_body_field(): void
+    {
+        $user = User::factory()->create();
+        $protocol = Protocol::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson("/api/v1/protocols/{$protocol->id}/threads", [
+                'title' => 'Cold Plunge Optimal Timing Discussion',
+                'body' => 'Should cold plunge be performed before or after hypertrophy training?',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'data' => [
+                    'title' => 'Cold Plunge Optimal Timing Discussion',
+                    'protocol_id' => $protocol->id,
+                    'body' => 'Should cold plunge be performed before or after hypertrophy training?',
+                    'content' => 'Should cold plunge be performed before or after hypertrophy training?',
+                ],
+            ]);
     }
 
     public function test_authenticated_user_can_post_comment_and_nested_reply_to_thread(): void

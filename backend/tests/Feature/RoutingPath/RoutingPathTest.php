@@ -14,6 +14,7 @@ class RoutingPathTest extends TestCase
 
     public function test_protocols_endpoint_strictly_fails_with_503_when_typesense_is_unconfigured(): void
     {
+        config(['scout.typesense.is_configured' => false]);
         $this->app->forgetInstance(\Typesense\Client::class);
         $this->app->instance(\Typesense\Client::class, null);
 

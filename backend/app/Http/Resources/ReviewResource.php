@@ -24,6 +24,7 @@ class ReviewResource extends JsonResource
             'rating' => (int) $this->rating,
             'verdict' => $this->verdict,
             'summary' => $this->summary,
+            'feedback' => $this->summary ?: $this->findings,
             'findings' => $this->findings,
             'author' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at?->toISOString(),

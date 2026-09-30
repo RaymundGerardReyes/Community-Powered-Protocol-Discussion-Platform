@@ -24,6 +24,7 @@ class ThreadResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'content' => $this->content,
+            'body' => $this->content,
             'is_pinned' => (bool) $this->is_pinned,
             'views_count' => (int) $this->views_count,
             'replies_count' => (int) $this->replies_count,

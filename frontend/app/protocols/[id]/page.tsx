@@ -5,7 +5,9 @@ import { fetchProtocol, fetchProtocolThreads, fetchProtocolReviews } from '@/fea
 import { Badge } from '@/components/ui/Badge';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { ReviewList } from '@/features/reviews/components/ReviewList';
+import { CreateReviewForm } from '@/features/reviews/components/CreateReviewForm';
 import { ThreadCard } from '@/features/threads/components/ThreadCard';
+import { CreateThreadForm } from '@/features/threads/components/CreateThreadForm';
 import { Spinner } from '@/components/ui/Spinner';
 import type { ApiError } from '@/lib/api-client';
 
@@ -128,15 +130,18 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
 
       {/* ── Discussion Threads ───────────────────────────────────────── */}
       <section className='mb-10'>
-        <h2 className='section-title mb-4'>
-          Discussion Threads
-          <span
-            className='badge badge-info ml-2'
-            style={{ borderRadius: '999px', verticalAlign: 'middle' }}
-          >
-            {threads.length}
-          </span>
-        </h2>
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='section-title mb-0'>
+            Discussion Threads
+            <span
+              className='badge badge-info ml-2'
+              style={{ borderRadius: '999px', verticalAlign: 'middle' }}
+            >
+              {threads.length}
+            </span>
+          </h2>
+        </div>
+        <CreateThreadForm protocolId={protocol.id} />
         <Suspense fallback={<Spinner />}>
           {threads.length > 0 ? (
             <ul className='space-y-3'>
@@ -161,15 +166,18 @@ export default async function ProtocolDetailPage({ params }: PageProps) {
 
       {/* ── Peer Reviews ─────────────────────────────────────────────── */}
       <section>
-        <h2 className='section-title mb-4'>
-          Peer Reviews
-          <span
-            className='badge badge-neutral ml-2'
-            style={{ borderRadius: '999px', verticalAlign: 'middle' }}
-          >
-            {protocol.reviews_count}
-          </span>
-        </h2>
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='section-title mb-0'>
+            Peer Reviews
+            <span
+              className='badge badge-neutral ml-2'
+              style={{ borderRadius: '999px', verticalAlign: 'middle' }}
+            >
+              {protocol.reviews_count}
+            </span>
+          </h2>
+        </div>
+        <CreateReviewForm protocolId={protocol.id} />
         <div className='card-flat p-5'>
           <ReviewList reviews={reviews} />
         </div>

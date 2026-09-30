@@ -12,6 +12,13 @@ class StoreThreadRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('body') && ! $this->has('content')) {
+            $this->merge(['content' => $this->input('body')]);
+        }
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -19,7 +26,8 @@ class StoreThreadRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'content' => ['required_without:body', 'nullable', 'string'],
+            'body' => ['nullable', 'string'],
             'is_pinned' => ['nullable', 'boolean'],
         ];
     }

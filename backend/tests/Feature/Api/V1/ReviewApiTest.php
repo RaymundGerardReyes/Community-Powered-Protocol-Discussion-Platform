@@ -153,4 +153,26 @@ class ReviewApiTest extends TestCase
         $this->assertSame(0, $protocol->reviews_count);
         $this->assertEquals(0.00, (float) $protocol->average_rating);
     }
+
+    public function test_can_submit_review_with_optional_feedback_and_rating(): void
+    {
+        $author = User::factory()->create();
+        $reviewer = User::factory()->create();
+        $protocol = Protocol::factory()->create(['user_id' => $author->id]);
+
+        $response = $this->actingAs($reviewer, 'sanctum')
+            ->postJson("/api/v1/protocols/{$protocol->id}/reviews", [
+                'rating' => 4,
+                'feedback' => 'Great protocol for sleep recovery. Clear instructions.',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'data' => [
+                    'rating' => 4,
+                    'feedback' => 'Great protocol for sleep recovery. Clear instructions.',
+                    'verdict' => 'approved',
+                ],
+            ]);
+    }
 }

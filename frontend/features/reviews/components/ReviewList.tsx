@@ -47,12 +47,12 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
             <RatingStars rating={review.rating} size="sm" />
           </div>
 
-          {review.feedback && (
+          {(review.feedback || (review as any).summary || (review as any).findings) && (
             <p
               className="mt-2 text-xs leading-relaxed"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {review.feedback}
+              {review.feedback || (review as any).summary || (review as any).findings}
             </p>
           )}
 

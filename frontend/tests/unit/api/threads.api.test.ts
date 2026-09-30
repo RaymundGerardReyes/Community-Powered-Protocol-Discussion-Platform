@@ -32,7 +32,11 @@ describe('Threads API Service', () => {
 
     const result = await createThread(payload);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/threads', payload);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/protocols/1/threads', {
+      title: 'State Sync Latency',
+      body: 'Can we optimize batch proofs?',
+      content: 'Can we optimize batch proofs?',
+    });
     expect(result).toEqual(createdThread);
   });
 });

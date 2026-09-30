@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: 'Protocol Hub — Community-Powered Protocol Discussion',
   },
   description:
-    'Discover, discuss, and vote on Web3 protocol standards. A community-powered platform for protocol governance.',
+    'Discover, discuss, and vote on structured healing, wellness, and instructional protocols. A community-powered platform for evidence-based protocols.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -19,8 +19,9 @@ class StoreReviewRequest extends FormRequest
     {
         return [
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'verdict' => ['required', 'in:approved,changes_requested,rejected'],
-            'summary' => ['required', 'string', 'max:255'],
+            'verdict' => ['nullable', 'in:approved,changes_requested,rejected'],
+            'summary' => ['nullable', 'string', 'max:255'],
+            'feedback' => ['nullable', 'string'],
             'findings' => ['nullable', 'string'],
         ];
     }

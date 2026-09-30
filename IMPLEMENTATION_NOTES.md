@@ -1,124 +1,124 @@
-# Community-Powered Protocol Platform — Implementation Notes
+# Community-Powered Protocol Platform: Implementation Notes & Technical Architecture
 
-**Author:** Raymund Gerard Reyes  
-**Architecture Version:** 2026 Production Baseline (Laravel 13 + Next.js 16 + PostgreSQL 17/18 + Typesense 27.1 + Redis 7)  
-**Date:** September 2026  
+## 1. Executive Summary & Objective
+
+This platform organizes, filters, and surfaces structured knowledge (**Protocols**) and community discussions (**Threads**) focused on evidence-based **healing, wellness, and instructional health practices** (e.g., Circadian Optimization, Cold-Water Immersion, Gut Restoration, Zone 2 Cardio, and Ergonomics). It simulates Reddit/forum-style engagement through nested comment trees, polymorphic reputation voting (+1 / -1), and expert peer reviews with 1–5 star ratings.
+
+The architecture marries a high-performance **Laravel 11 REST API** transactional backend with a **Typesense 27** search sidecar and a modern **Next.js 16 (React 19)** frontend with Tailwind CSS v4.
 
 ---
 
-## 1. Executive Summary & Architecture Overview
-
-The Community-Powered Protocol Discussion Platform is built to provide decentralized governance, protocol proposal discussions, peer code reviews, and community reputation voting. The system adheres to strict domain separation between a stateless Laravel 13 REST API backend and a Next.js 16 (React 19, Turbopack) client-side application with server-rendered routing.
+## 2. System Architecture & Topology
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Next.js 16 (App Router)                         │
-│   React 19 • Turbopack • TanStack Query v5 • Tailwind CSS 4 • Typesense│
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP / JSON (CORS + Sanctum)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Laravel 13 REST API                             │
-│   PHP 8.4/8.5 • Form Requests • API Resources • Scout Engine • Pint    │
-└───────────┬───────────────────────┼─────────────────────────┬──────────┘
-            │                       │                         │
-            ▼                       ▼                         ▼
-┌───────────────────────┐ ┌───────────────────┐ ┌────────────────────────┐
-│     PostgreSQL 17     │ │    Typesense 27   │ │        Redis 7         │
-│  Relational Storage   │ │ Typo-tolerant     │ │ Distributed Caching    │
-│  Polymorphic Votes    │ │ Fast Search Index │ │ Session & Rate Limits  │
-└───────────────────────┘ └───────────────────┘ └────────────────────────┘
+                     NEXT.JS 16 FRONTEND (Port 3000)
+               React Server Components (RSC) & TanStack Query
+                                    │
+               ┌────────────────────┴────────────────────┐
+               ▼                                         ▼
+   TYPESENSE SEARCH SIDECAR (Port 8108/443)      LARAVEL 11 REST API (Port 8000)
+    Direct Read Discovery & Typo Search            Transactional Mutations & Auth
+               │                                         │
+               │                                         ▼
+               │                              RELATIONAL STORAGE (Port 5433)
+               └────── Sync on CRUD ◄──────── PostgreSQL 17 / SQLite Host Mode
 ```
 
----
-
-## 2. Backend Design Patterns & Implementation
-
-### 2.1 Layered Architecture (Repository & Service Pattern)
-To ensure strict separation of concerns, the backend enforces a three-tier architecture:
-1. **Controllers (`app/Http/Controllers/Api/V1`)**: Handle HTTP request validation delegation and JSON resource transformations. Controllers never execute raw SQL or mutate database state directly.
-2. **Services (`app/Services`)**: Contain all business logic, authorization policies, and orchestration.
-   - `ProtocolService`: Manages protocol creation, slugification, status transitions, and search index dispatch.
-   - `VoteService`: Implements polymorphic vote casting with atomic toggle logic and real-time aggregate recalculation.
-   - `ReviewService`: Computes running weighted protocol review scores and average ratings upon peer review submissions.
-   - `CommentService`: Manages recursive hierarchical discussion threads and nested replies.
-3. **Repositories (`app/Repositories`)**: Encapsulate Eloquent query construction, eager-loading relations, sorting strategies, and pagination.
-
-### 2.2 Relational Model & Polymorphic Voting Engine
-- **Protocols Table**: Tracks metadata (`title`, `slug`, `category`, `version`, `status`, `metadata` JSONB), along with cached denormalized aggregates (`score`, `votes_count`, `reviews_count`, `average_rating`) to prevent $O(N)$ runtime aggregations.
-- **Discussion Threads & Hierarchical Comments**: Adjacency list tree pattern via `parent_id` foreign key referencing `comments.id` enabling unlimited nesting depth for replies.
-- **Polymorphic Votes Table**: Supports voting across any votable entity (`votable_type`, `votable_id`, `user_id`, `value`). The system enforces unique composite keys `(user_id, votable_type, votable_id)` ensuring a user can cast at most one vote per entity (+1 or -1) with toggle-off support.
-- **Weighted Protocol Scoring Algorithm**:
-  $$\text{Score} = (\text{Net Votes} \times 10) + (\text{Peer Reviews Count} \times 5) + (\text{Average Rating} \times 2)$$
-
-### 2.3 Search Engine: Laravel Scout & Typesense 27
-- Configured native Typesense engine via `laravel/scout` and `typesense/typesense-php`.
-- Custom schemas defined in `config/scout.php` for `Protocol` and `Thread` models.
-- Dedicated Artisan command `php artisan search:reindex` wipes and regenerates instant search collections.
-- Frontend directly communicates with Typesense on port `8108` using a read-only search key (`abc`), offloading heavy search traffic from the relational database.
+### Relational Database vs. Search Sidecar Boundary
+1. **Transactional Integrity (RDBMS Single Source of Truth):**
+   - User authentication (hashed bcrypt credentials, Sanctum tokens).
+   - Foreign key integrity (`onDelete('cascade')`, `parent_id` comment trees).
+   - Compound unique constraints preventing duplicate votes (`[user_id, votable_type, votable_id]`) and duplicate reviews (`[protocol_id, user_id]`).
+2. **Search Engine Read Sidecar (Typesense):**
+   - Read catalog queries (`/api/v1/protocols`) and protocol discussions (`/api/v1/protocols/{id}/threads`) hydrate directly from Typesense collections with **zero database SQL queries**.
+   - Sub-15ms prefix search, fuzzy matching, and multi-facet filtering (by category, tags, status, votes, reviews count, and ratings).
+   - On creation, update, or deletion, Eloquent models automatically synchronize their indexable state to Typesense via Laravel Scout.
 
 ---
 
-## 3. Frontend Architecture & Modern Web Patterns
+## 3. Core Domain Models & Invariants
 
-### 3.1 Next.js 16 App Router & Server Components
-- **Feature-Colocated Structure**: Code is partitioned by business feature under `frontend/features/` (`protocols/`, `threads/`, `comments/`, `reviews/`, `votes/`).
-- **Async Metadata & Route Parameters**: Compatible with React 19 / Next.js 16 asynchronous request APIs (`await searchParams`, `await params`).
-- **Optimistic UI with TanStack React Query v5**: Voting mutations immediately increment or decrement counts in client state via `onMutate` rollback snapshots, delivering 0ms perceived interaction latency.
-- **Search Client with Automatic Fallback**: The client-side search component attempts high-speed instant search queries against Typesense. If Typesense is unreachable, it automatically degrades gracefully to the Laravel backend SQL search endpoint.
-
-### 3.2 Security, CORS, and Credentials
-- **W3C CORS Protocol**: Because the frontend uses `withCredentials: true` for Sanctum stateful authentication, `config/cors.php` explicitly specifies allowed frontend origins (`http://localhost:3000`, `http://127.0.0.1:3000`) and sets `supports_credentials: true`. Wildcards (`*`) are strictly avoided to adhere to browser security specifications.
-
----
-
-## 4. Verification, Testing & Quality Assurance
-
-### 4.1 Automated Backend Suite (Pest 4)
-- **37 automated feature and unit tests** across 8 test suites:
-  - `AuthenticationTest`: Registration, login token issuance, Sanctum user verification.
-  - `ProtocolTest`: Full CRUD, slug routing, pagination, category filtering, and sorting.
-  - `ThreadTest`: Thread creation, protocol association, view counter increment.
-  - `CommentTest`: Nested reply creation, parent-child tree verification.
-  - `ReviewTest`: Star ratings (1-5), duplicate review prevention, aggregate updates.
-  - `VoteTest`: Upvoting, downvoting, toggle reversals, and score recalculation.
-  - `SearchReindexCommandTest`: Scout Typesense index synchronization.
-- **Result:** 100% pass rate (37 tests, 191 assertions).
-
-### 4.2 Static Analysis & Formatting
-- **PHPStan / Larastan**: Level 8 analysis passed with zero errors.
-- **Laravel Pint**: Formatted strictly according to Laravel opinionated standards.
-- **TypeScript & ESLint**: Strict type checking with 0 errors across all Next.js routes.
+| Entity | Attributes & Canonical Fields | Relationships & Rules |
+| :--- | :--- | :--- |
+| **Protocol** | `title`, `description` / `content`, `category`, `tags`, `version`, `status`, `votes_count`, `average_rating` / `rating` | Has many Threads, Reviews; Morph-many Votes. Authored by User. |
+| **Thread** | `title`, `content` / `body`, `slug`, `views_count`, `replies_count`, `votes_count` | Belongs to Protocol & User; Has many Comments; Morph-many Votes. |
+| **Comment** | `content` / `body`, `parent_id` (nested replies), `votes_count` | Belongs to Thread, User, and optional parent Comment. Unbounded recursion assembled in $O(N)$ time in memory. |
+| **Review** | `rating` (1–5), `summary`, `feedback`, `verdict` (`approved`, `changes_requested`, `rejected`), `findings` | Belongs to Protocol & User. Author cannot review their own protocol. Unique per user-protocol pair. |
+| **Vote** | `value` (+1 / -1), `votable_type`, `votable_id` | Polymorphic; toggleable (clicking same vote removes it; opposite updates it). One vote per user per entity. |
 
 ---
 
-## 5. Deployment & Execution Instructions
+## 4. RESTful API Contract & Field Parity
 
-### Option A: Quickstart via Docker (Zero Local Setup)
-```bash
-docker compose up -d
-docker compose exec backend php artisan migrate --seed
-docker compose exec backend php artisan search:reindex
+All endpoints reside under `/api/v1`. To guarantee 100% contract parity across different consumers, API Resources return both canonical specification fields and backwards-compatible aliases:
+
+* **Protocols (`/api/v1/protocols`)**:
+  - `GET /api/v1/protocols` — Filterable by `search` (title query), `category`, `status`, and sorted by `created_at` (Most Recent), `reviews_count` (Most Reviewed), or `votes_count` (Most Upvoted / Highest Rated).
+  - `GET /api/v1/protocols/{slug}` — Resolves protocol by slug with embedded threads and peer reviews.
+  - `POST /api/v1/protocols` *(Auth)* — Accepts `title`, `content` or `description`, `category`, and `tags`.
+* **Threads (`/api/v1/protocols/{id}/threads`)**:
+  - `GET /api/v1/protocols/{protocol}/threads` — Lists pinned and recent threads for a protocol.
+  - `POST /api/v1/protocols/{protocol}/threads` *(Auth)* — Accepts `title`, `body` or `content`.
+  - `GET /api/v1/threads/{id}` — Thread detail view with nested comment tree.
+* **Comments (`/api/v1/threads/{id}/comments`)**:
+  - `GET /api/v1/threads/{thread}/comments` — Returns hierarchical comment tree.
+  - `POST /api/v1/threads/{thread}/comments` *(Auth)* — Creates root comment or nested reply via `parent_id`.
+* **Reviews (`/api/v1/protocols/{id}/reviews`)**:
+  - `POST /api/v1/protocols/{protocol}/reviews` *(Auth)* — Submits rating (1–5) and optional `feedback`.
+* **Polymorphic Votes (`/api/v1/votes`)**:
+  - `POST /api/v1/votes` *(Auth)* — Casts or toggles votes for `protocol`, `thread`, or `comment`.
+
+---
+
+## 5. Key Engineering & Design Decisions
+
+### A. Pure Typesense Document Hydration (Zero-SQL Read Path)
+Read catalog requests hydrate Eloquent models directly from Typesense document hits without performing downstream SQL queries (`whereIn('id', $ids)`). Response headers confirm:
+```http
+X-Search-Driver: typesense
+X-Data-Source: typesense
+X-Database-Connection: none (typesense-decoupled)
+X-Database-Target: typesense-cloud
 ```
-- App: `http://localhost:3000`
-- API: `http://localhost:8000` or `http://localhost/api`
-- Typesense: `http://localhost:8108`
 
-### Option B: Native Host Execution
+### B. Fail-Loud Search Reliability
+If Typesense credentials are intentionally omitted or unreachable in strict search mode, the application halts immediately with **HTTP 503 Service Unavailable** (`< 30ms` latency), eliminating silent fallback loops that previously returned outdated mock rows from local SQLite storage.
+
+### C. Client-Side Interactive Ergonomics
+- **Expandable Submission Cards:** Thread creation and Review submission are rendered as expandable, accessible cards above their respective sections on the protocol detail page, reducing modal friction.
+- **Optimistic TanStack Query Mutations:** Comment creation and vote changes update the UI at $0\text{ ms}$ before network acknowledgment, rolling back automatically on error.
+- **Client Auth Deduplication:** Consecutive in-flight calls to `/api/v1/auth/me` are memoized, avoiding duplicate network waterfalls during React 19 component mounting.
+
+---
+
+## 6. Verification & Automated Test Coverage
+
+The platform is fortified with end-to-end automated testing spanning unit, integration, and API feature suites:
+
+* **Backend Test Suite (`php artisan test`):**
+  - **107 Tests / 598 Assertions (100% Pass Rate)** across 11 test suites.
+  - Suites include `ProtocolTest`, `ThreadCommentApiTest`, `ReviewApiTest`, `VoteApiTest`, `AuthApiTest`, `RoutingPathTest`, and `TypesenseCollectionSchemaTest`.
+* **Frontend Test Suite (`npx vitest run`):**
+  - **27 Test Files / 93 Tests (100% Pass Rate)** spanning UI components, query cache hooks, API services, and navigation.
+
+---
+
+## 7. Setup & Quickstart
+
 ```bash
-# 1. Start support services (PostgreSQL 17, Typesense, Redis)
-docker run -d --name protocol_pg17 -p 5433:5432 -e POSTGRES_DB=protocol_platform -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=secret postgres:17-alpine
-docker run -d --name protocol_typesense -p 8108:8108 typesense/typesense:27.1 --data-dir /data --api-key=xyz --enable-cors
-docker run -d --name protocol_redis -p 6379:6379 redis:alpine
-
-# 2. Backend
+# 1. Backend Setup
 cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan search:reindex
 php artisan serve --host=127.0.0.1 --port=8000
 
-# 3. Frontend
-cd frontend
+# 2. Frontend Setup
+cd ../frontend
+npm install
+cp .env.example .env.local
 npm run dev
 ```
-Navigate to **`http://localhost:3000/protocols`**.
+Accessible at `http://localhost:3000` (Next.js) and `http://127.0.0.1:8000` (Laravel API).

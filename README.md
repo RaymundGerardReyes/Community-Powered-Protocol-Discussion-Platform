@@ -1,6 +1,6 @@
 # Community-Powered Protocol & Discussion Platform
 
-A production-grade Web3 protocol discussion, peer review, and reputation voting platform built with **Laravel 13** and **Next.js 16 (React 19)**.
+A production-grade structured healing, wellness, and instructional protocol discussion, peer review, and reputation voting platform built with **Laravel 13** and **Next.js 16 (React 19)**.
 
 ---
 
@@ -13,13 +13,13 @@ A production-grade Web3 protocol discussion, peer review, and reputation voting 
 | **Language** | **TypeScript 5.x** | Strict end-to-end type safety |
 | **Styling** | **Tailwind CSS 4.x** | Modern styling, accessible design system |
 | **State & Data Fetching** | **TanStack Query v5** | Optimistic UI mutations, stale-while-revalidate |
-| **Search Engine** | **Typesense 27.1** | Instant, typo-tolerant search across protocols & threads |
+| **Search Engine** | **Typesense 27.1 / Cloud** | Instant, typo-tolerant search across protocols & threads |
 | **Backend Framework** | **Laravel 13.x** | Versioned REST API with Repository-Service pattern |
 | **Language Runtime** | **PHP 8.4 / 8.5** | High-performance CLI and API execution |
-| **Database** | **PostgreSQL 17 / 18** | Relational data, foreign keys, polymorphic tables |
-| **Caching & Queues** | **Redis 7** | Distributed session, caching, and rate limiting |
-| **Testing (Backend)** | **Pest 4 / PHPUnit 12** | 37 automated tests across all 8 suites (100% pass) |
-| **Testing (Frontend)** | **Vitest 5 + Testing Library** | Component and hook unit tests |
+| **Database** | **PostgreSQL 17 / SQLite** | Relational data, foreign keys, polymorphic tables |
+| **Caching & Queues** | **Sync / File / Redis** | Scalable sessions, caching, and rate limiting |
+| **Testing (Backend)** | **Pest 4 / PHPUnit 12** | 107 automated tests across all suites (100% pass) |
+| **Testing (Frontend)** | **Vitest 5 + Testing Library** | 27 test suites / 93 unit and integration tests (100% pass) |
 | **Code Formatting** | **Laravel Pint & ESLint** | Automated opinionated linting and formatting |
 
 ---
@@ -94,11 +94,11 @@ All endpoints are versioned under `/api/v1`:
 ## 📦 Database Seeder & Mock Data
 
 The database seeder (`php artisan migrate:fresh --seed`) creates:
-- **5 Default Users**: Admin (`admin@protocol.io`), Vitalik B. (`vitalik@protocol.io`), Alice Cryptographer (`alice@protocol.io`), Bob Auditor (`bob@protocol.io`), Charlie DeFi (`charlie@protocol.io`). Password: `password`.
-- **12 Published Protocols**: Across Layer2, DeFi, Staking, Security, Oracles, Governance, and Cryptography.
-- **12 Discussion Threads**: One pinned specification discussion per protocol.
-- **24 Hierarchical Comments**: Demonstrating 2-level threaded discussions.
-- **36 Peer Reviews**: Detailed findings, scores, and verdicts.
+- **5 Clinical & Community Contributors**: Admin (`admin@protocol.io`), Dr. Andrew H. (`andrew@protocol.io`), Dr. Rhonda P. (`rhonda@protocol.io`), Elena Rostova PT (`elena@protocol.io`), Coach Marcus Vance (`marcus@protocol.io`). Legacy demo users (`vitalik@protocol.io`, etc.) are also aliased for seamless backward compatibility. Password: `password`.
+- **12 Published Healing & Wellness Protocols**: Circadian Sleep Architecture, Low-FODMAP Gut Health, Cold-Water Immersion, Rotator Cuff Rehab, Zone-2 Cardio, Cyclic Sigh Breathwork, 16:8 Fasting, Ergonomic Posture, Magnesium Sleep Stacking, Contrast Hydrotherapy, Low-Histamine Immunology, and VO2 Max Norwegian 4x4.
+- **12 Discussion Threads**: One dedicated community discussion thread per protocol.
+- **24 Hierarchical Comments**: Demonstrating arbitrary recursive nested discussions.
+- **36 Peer Reviews**: Detailed findings, scores (1–5 stars), and verdicts.
 - **48 Polymorphic Votes**: Initial reputation metrics and recalculation of protocol score aggregates.
 
 ---

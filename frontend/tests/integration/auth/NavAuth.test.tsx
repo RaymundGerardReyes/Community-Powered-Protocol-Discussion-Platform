@@ -43,6 +43,7 @@ describe('NavAuth Component', () => {
     expect(screen.getByText('1-Click Demo Accounts')).toBeInTheDocument();
     expect(screen.getByText('Vitalik B.')).toBeInTheDocument();
     expect(screen.getByText('Alice Cryptographer')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Andrew H.')).toBeInTheDocument();
   });
 
   it('renders user name and Sign Out button when authenticated', () => {

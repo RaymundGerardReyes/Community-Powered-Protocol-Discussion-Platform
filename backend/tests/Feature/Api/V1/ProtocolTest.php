@@ -73,7 +73,7 @@ class ProtocolTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'title', 'slug', 'description', 'category', 'status', 'votes_count', 'score', 'average_rating'],
+                    '*' => ['id', 'title', 'slug', 'description', 'content', 'category', 'tags', 'status', 'votes_count', 'score', 'average_rating', 'rating'],
                 ],
                 'links',
                 'meta',
@@ -84,6 +84,7 @@ class ProtocolTest extends TestCase
 
     public function test_protocols_endpoint_strictly_aborts_503_when_typesense_unconfigured(): void
     {
+        config(['scout.typesense.is_configured' => false]);
         $this->app->forgetInstance(\Typesense\Client::class);
         $this->app->instance(\Typesense\Client::class, null);
 

@@ -11,10 +11,12 @@ export interface DemoUser {
 }
 
 export const DEMO_USERS: DemoUser[] = [
-  { name: 'Vitalik B.', email: 'vitalik@protocol.io', role: 'Core Contributor' },
-  { name: 'Alice Cryptographer', email: 'alice@protocol.io', role: 'Cryptographer' },
-  { name: 'Bob Auditor', email: 'bob@protocol.io', role: 'Security Auditor' },
-  { name: 'Charlie DeFi', email: 'charlie@protocol.io', role: 'Protocol Researcher' },
+  { name: 'Dr. Andrew H.', email: 'andrew.h@wellness.io', role: 'Neurobiology & Sleep' },
+  { name: 'Dr. Rhonda P.', email: 'rhonda.p@wellness.io', role: 'Biomedical Science' },
+  { name: 'Elena Rostova, PT', email: 'elena.r@wellness.io', role: 'Physical Therapy & Rehab' },
+  { name: 'Coach Marcus Vance', email: 'marcus.v@wellness.io', role: 'Physiology & Recovery' },
+  { name: 'Vitalik B.', email: 'vitalik@protocol.io', role: 'Research Fellow' },
+  { name: 'Alice Cryptographer', email: 'alice@protocol.io', role: 'Clinical Data Reviewer' },
   { name: 'Protocol Admin', email: 'admin@protocol.io', role: 'Platform Admin' },
 ];
 

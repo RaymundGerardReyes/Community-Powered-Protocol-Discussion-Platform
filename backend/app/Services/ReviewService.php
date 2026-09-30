@@ -38,13 +38,19 @@ class ReviewService
         }
 
         return DB::transaction(function () use ($user, $protocol, $data) {
+            $rating = (int) $data['rating'];
+            $verdict = $data['verdict'] ?? ($rating >= 4 ? 'approved' : ($rating >= 2 ? 'changes_requested' : 'rejected'));
+            $feedback = $data['feedback'] ?? null;
+            $summary = $data['summary'] ?? ($feedback ? \Illuminate\Support\Str::limit($feedback, 250) : "Rating: {$rating}/5 stars");
+            $findings = $data['findings'] ?? $feedback ?? null;
+
             $review = Review::create([
                 'protocol_id' => $protocol->id,
                 'user_id' => $user->id,
-                'rating' => (int) $data['rating'],
-                'verdict' => $data['verdict'],
-                'summary' => $data['summary'],
-                'findings' => $data['findings'] ?? null,
+                'rating' => $rating,
+                'verdict' => $verdict,
+                'summary' => $summary,
+                'findings' => $findings,
             ]);
 
             Log::info('review.created', [
