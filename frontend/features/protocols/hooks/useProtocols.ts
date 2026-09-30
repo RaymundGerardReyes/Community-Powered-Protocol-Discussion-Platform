@@ -6,5 +6,7 @@ export function useProtocols(filters?: ProtocolFilters) {
     queryKey: ['protocols', filters],
     queryFn: () => fetchProtocols(filters),
     placeholderData: (prev) => prev, // keep previous data while fetching
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 }

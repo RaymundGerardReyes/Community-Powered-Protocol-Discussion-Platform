@@ -50,25 +50,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Initialize from localStorage with in-flight deduplication
+  // Initialize from localStorage with in-flight deduplication and sessionStorage caching
   useEffect(() => {
     let isSubscribed = true;
     const savedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const savedUserStr = typeof window !== 'undefined' ? sessionStorage.getItem('auth_user') : null;
+
     if (!savedToken) {
       setIsLoading(false);
       return;
     }
 
     setToken(savedToken);
+
+    if (savedUserStr) {
+      try {
+        const cachedUser = JSON.parse(savedUserStr);
+        if (cachedUser && cachedUser.id) {
+          setUser(cachedUser);
+          setIsLoading(false);
+        }
+      } catch {
+        sessionStorage.removeItem('auth_user');
+      }
+    }
+
     fetchMeDeduplicated()
       .then((res) => {
         if (isSubscribed) {
           setUser(res.data.user);
+          try {
+            sessionStorage.setItem('auth_user', JSON.stringify(res.data.user));
+          } catch {
+            // Ignore storage errors
+          }
         }
       })
       .catch(() => {
         if (isSubscribed) {
           localStorage.removeItem('auth_token');
+          sessionStorage.removeItem('auth_user');
           setToken(null);
           setUser(null);
         }
@@ -93,6 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       const { user: authedUser, access_token } = res.data;
       localStorage.setItem('auth_token', access_token);
+      try {
+        sessionStorage.setItem('auth_user', JSON.stringify(authedUser));
+      } catch {
+        // Ignore storage errors
+      }
       setToken(access_token);
       setUser(authedUser);
       setIsAuthModalOpen(false);
@@ -108,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore logout failure if token expired
     } finally {
       localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_user');
       setToken(null);
       setUser(null);
     }

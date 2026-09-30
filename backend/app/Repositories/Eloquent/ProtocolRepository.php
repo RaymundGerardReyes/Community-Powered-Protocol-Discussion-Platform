@@ -126,7 +126,14 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                 'per_page' => $perPage,
             ];
 
-            $results = $typesense->collections['protocol']->documents->search($searchParams);
+            if (app()->environment('testing')) {
+                $results = $typesense->collections['protocol']->documents->search($searchParams);
+            } else {
+                $cacheKey = 'typesense.catalog.' . md5(json_encode($searchParams));
+                $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($typesense, $searchParams) {
+                    return $typesense->collections['protocol']->documents->search($searchParams);
+                });
+            }
 
             $found = (int) ($results['found'] ?? 0);
             $hits = $results['hits'] ?? [];
@@ -168,22 +175,20 @@ class ProtocolRepository implements ProtocolRepositoryInterface
         }
 
         try {
-            if (is_numeric($slug)) {
-                try {
-                    $doc = $typesense->collections['protocol']->documents[(string) $slug]->retrieve();
-                    $protocol = $this->hydrateProtocolFromDocument($doc);
-                } catch (\Throwable) {
-                    $results = $typesense->collections['protocol']->documents->search([
-                        'q' => '*',
-                        'filter_by' => 'id:=' . (string) $slug,
-                        'per_page' => 1,
-                    ]);
-                    if (empty($results['hits'])) {
-                        abort(404, "Protocol not found with ID: {$slug}");
+            $fetchDoc = function () use ($typesense, $slug) {
+                if (is_numeric($slug)) {
+                    try {
+                        return $typesense->collections['protocol']->documents[(string) $slug]->retrieve();
+                    } catch (\Throwable) {
+                        $results = $typesense->collections['protocol']->documents->search([
+                            'q' => '*',
+                            'filter_by' => 'id:=' . (string) $slug,
+                            'per_page' => 1,
+                        ]);
+                        return $results['hits'][0]['document'] ?? null;
                     }
-                    $protocol = $this->hydrateProtocolFromDocument($results['hits'][0]['document']);
                 }
-            } else {
+
                 $results = $typesense->collections['protocol']->documents->search([
                     'q' => $slug,
                     'query_by' => 'slug,title',
@@ -192,7 +197,6 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                 ]);
 
                 if (empty($results['hits'])) {
-                    // Fallback search by normalized title/slug
                     $results = $typesense->collections['protocol']->documents->search([
                         'q' => str_replace('-', ' ', $slug),
                         'query_by' => 'slug,title',
@@ -200,21 +204,33 @@ class ProtocolRepository implements ProtocolRepositoryInterface
                     ]);
                 }
 
-                if (empty($results['hits'])) {
-                    abort(404, "Protocol not found with slug: {$slug}");
-                }
+                return $results['hits'][0]['document'] ?? null;
+            };
 
-                $protocol = $this->hydrateProtocolFromDocument($results['hits'][0]['document']);
+            $doc = app()->environment('testing')
+                ? $fetchDoc()
+                : \Illuminate\Support\Facades\Cache::remember('typesense.protocol.doc.' . md5($slug), 30, $fetchDoc);
+
+            if (empty($doc)) {
+                abort(404, "Protocol not found with slug or ID: {$slug}");
             }
+
+            $protocol = $this->hydrateProtocolFromDocument($doc);
 
             // Load associated threads directly from Typesense threads collection
             try {
-                $threadResults = $typesense->collections['threads']->documents->search([
-                    'q' => '*',
-                    'filter_by' => 'protocol_id:=' . (string) $protocol->id,
-                    'sort_by' => 'votes_count:desc',
-                    'per_page' => 25,
-                ]);
+                $fetchThreads = function () use ($typesense, $protocol) {
+                    return $typesense->collections['threads']->documents->search([
+                        'q' => '*',
+                        'filter_by' => 'protocol_id:=' . (string) $protocol->id,
+                        'sort_by' => 'votes_count:desc',
+                        'per_page' => 25,
+                    ]);
+                };
+
+                $threadResults = app()->environment('testing')
+                    ? $fetchThreads()
+                    : \Illuminate\Support\Facades\Cache::remember('typesense.threads.p.' . $protocol->id, 30, $fetchThreads);
 
                 $threads = collect($threadResults['hits'] ?? [])->map(function ($hit) use ($protocol) {
                     $tdoc = $hit['document'];
@@ -284,13 +300,19 @@ class ProtocolRepository implements ProtocolRepositoryInterface
         }
 
         try {
-            $results = $typesense->collections['protocol']->documents->search([
-                'q' => '*',
-                'query_by' => 'title,description',
-                'filter_by' => 'status:=published',
-                'sort_by' => 'votes_count:desc',
-                'per_page' => $limit,
-            ]);
+            $fetchTop = function () use ($typesense, $limit) {
+                return $typesense->collections['protocol']->documents->search([
+                    'q' => '*',
+                    'query_by' => 'title,description',
+                    'filter_by' => 'status:=published',
+                    'sort_by' => 'votes_count:desc',
+                    'per_page' => $limit,
+                ]);
+            };
+
+            $results = app()->environment('testing')
+                ? $fetchTop()
+                : \Illuminate\Support\Facades\Cache::remember("typesense.protocols.top.{$limit}", 30, $fetchTop);
 
             return collect($results['hits'] ?? [])
                 ->map(fn($hit) => $this->hydrateProtocolFromDocument($hit['document']))

@@ -107,7 +107,14 @@ class ThreadRepository implements ThreadRepositoryInterface
                 'per_page' => $perPage,
             ];
 
-            $results = $typesense->collections['threads']->documents->search($searchParams);
+            if (app()->environment('testing')) {
+                $results = $typesense->collections['threads']->documents->search($searchParams);
+            } else {
+                $cacheKey = 'typesense.threads.' . md5(json_encode($searchParams));
+                $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($typesense, $searchParams) {
+                    return $typesense->collections['threads']->documents->search($searchParams);
+                });
+            }
 
             $found = (int) ($results['found'] ?? 0);
             $hits = $results['hits'] ?? [];

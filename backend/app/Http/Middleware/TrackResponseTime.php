@@ -41,6 +41,10 @@ class TrackResponseTime
         $response->headers->set('X-Database-Connection', $isTypesense ? 'none (typesense-decoupled)' : $dbConn);
         $response->headers->set('X-Database-Target', $isTypesense ? 'typesense-cloud' : $dbTarget);
 
+        if (php_sapi_name() === 'cli-server') {
+            $response->headers->set('Connection', 'close');
+        }
+
         return $response;
     }
 }
