@@ -373,5 +373,33 @@
   - Transactional mutations (user authentication, protocol creation, updates, deletes, reviews, votes) remain safely managed via transactional SQL Eloquent models.
   - All read catalog and thread queries remain 100% decoupled from SQL databases and hydrated directly from Typesense documents.
 
+---
 
+## 23. Peer Review Domain Eligibility, Non-Blocking Host Sanitization & Single-Threaded Keep-Alive Discipline
+- **Author Self-Review Invariant:**
+  - Authors are strictly prohibited from reviewing their own protocols (`ReviewService` enforces HTTP 422: `Authors cannot review their own protocols.`).
+  - Frontend review forms (`CreateReviewForm`) must inspect `user.id === authorId` and `existingReviewerIds.includes(user.id)`. The UI must render clear, non-interactive informative notices explaining reviewer eligibility, preventing invalid form submissions and developer error log pollution.
+- **Zero Blocking DNS Lookups in Configuration Files:**
+  - Never invoke synchronous network, DNS, or socket functions (e.g., `gethostbyname()`) inside Laravel configuration files (`config/*.php`).
+  - Hostnames and cluster IDs must be sanitized and formatted using deterministic regular expressions. Network availability checks belong exclusively in explicit CLI diagnostic commands (`search:reindex`, `debug:routing-path`).
+- **PHP CLI Server Single-Threaded Keep-Alive Discipline:**
+  - When communicating with local single-threaded servers (`php artisan serve` on port 8000), server-side HTTP agents (Node.js Axios in Next.js RSC) must configure `keepAlive: false` (`Connection: close`).
+  - This ensures TCP sockets close immediately upon response delivery, preventing PHP's 500ms keep-alive idle wait from serializing and queuing parallel client requests.
+- **RSC Request Deduplication via React Cache:**
+  - Server Component data fetches shared between `generateMetadata` and page render functions must be wrapped in React 19 `cache()`, guaranteeing exactly one upstream API roundtrip per page navigation.
+  - Protocol detail endpoints must eager-load reviews and threads in a single compound payload to eliminate sequential waterfalls.
 
+---
+
+## 24. Active Vote Map Synchronization, Asynchronous Search Index Queuing & Sub-50ms Mutation Discipline
+- **Centralized User Vote Dictionary Invariant:**
+  - User-specific vote states must never be assumed from local component props or unauthenticated catalog responses.
+  - The backend provides `GET /api/v1/votes/me` returning an authenticated user's complete vote dictionary map (`['protocol' => [...], 'thread' => [...], 'comment' => [...]]`).
+  - Frontend components (`VoteButton`) must query this endpoint via `useUserVotes()` and perform $O(1)$ lookups by votable ID to determine active vote highlight (`1`, `-1`, or `null`).
+  - Mutations in `useVote` must optimistically mutate both the target entity's counter and the `['user-votes']` cache entry, preventing toggle-inversion bugs and visual grey-out resets.
+- **Synchronous Write-Path Search Isolation (withoutSyncingToSearch):**
+  - High-frequency write-path mutations (such as vote increments, review counters, or comment tallies) must NEVER trigger synchronous WAN/cloud search indexing during the HTTP request cycle.
+  - Eloquent updates updating denormalized metrics must execute inside `$model->withoutSyncingToSearch(...)`.
+- **Queued Search Synchronization (ShouldQueue):**
+  - Search index listeners (e.g. `SyncSearchIndex`) MUST implement `ShouldQueue`.
+  - When decoupled queues (`QUEUE_CONNECTION=database` or `QUEUE_CONNECTION=redis`) are enabled, sync jobs push in $< 3\text{ ms}$, ensuring synchronous HTTP mutations achieve the $< 50\text{ ms}$ SLO tier (`X-Response-Time: < 50ms`) regardless of external search cluster network latency.
