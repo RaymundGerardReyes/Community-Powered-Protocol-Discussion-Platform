@@ -3,24 +3,28 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useCallback } from 'react';
 import { cn } from '@/lib/cn';
 
+import { useCategories } from '../hooks/useCategories';
+
 const SORT_OPTIONS = [
   { label: 'Latest',         value: 'latest' },
   { label: 'Top Voted',      value: 'top' },
   { label: 'Highest Rated',  value: 'rating' },
 ];
 
-const CATEGORY_OPTIONS = [
+export const WELLNESS_CATEGORY_FALLBACKS = [
   { label: 'All Categories', value: '' },
-  { label: 'DeFi',           value: 'defi' },
-  { label: 'Layer 2',        value: 'layer2' },
-  { label: 'Infrastructure', value: 'infrastructure' },
-  { label: 'Security',       value: 'security' },
-  { label: 'Cryptography',   value: 'cryptography' },
-  { label: 'Oracles',        value: 'oracles' },
-  { label: 'Governance',     value: 'governance' },
-  { label: 'Staking',        value: 'staking' },
-  { label: 'Identity',       value: 'identity' },
-  { label: 'Interoperability', value: 'interoperability' },
+  { label: 'Biohacking', value: 'biohacking' },
+  { label: 'Breathwork', value: 'breathwork' },
+  { label: 'Cardiovascular', value: 'cardiovascular' },
+  { label: 'Fitness', value: 'fitness' },
+  { label: 'Gut Health', value: 'gut-health' },
+  { label: 'Immunology', value: 'immunology' },
+  { label: 'Instructional', value: 'instructional' },
+  { label: 'Nutrition', value: 'nutrition' },
+  { label: 'Physical Therapy', value: 'physical-therapy' },
+  { label: 'Recovery', value: 'recovery' },
+  { label: 'Sleep', value: 'sleep' },
+  { label: 'Supplements', value: 'supplements' },
 ];
 
 const STATUS_OPTIONS = [
@@ -48,6 +52,18 @@ export function ProtocolFilterBar() {
     },
     [router, pathname, searchParams],
   );
+
+  const { data: dynamicCategories } = useCategories();
+
+  const categoryOptions = dynamicCategories && dynamicCategories.length > 0
+    ? [
+        { label: 'All Categories', value: '' },
+        ...dynamicCategories.map((c) => ({
+          label: c.count !== undefined && c.count > 0 ? `${c.name} (${c.count})` : c.name,
+          value: c.slug,
+        })),
+      ]
+    : WELLNESS_CATEGORY_FALLBACKS;
 
   const current = {
     sort:     searchParams.get('sort')     ?? 'latest',
@@ -95,7 +111,7 @@ export function ProtocolFilterBar() {
         }}
         aria-label='Filter by category'
       >
-        {CATEGORY_OPTIONS.map((opt) => (
+        {categoryOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>

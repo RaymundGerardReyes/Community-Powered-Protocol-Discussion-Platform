@@ -31,6 +31,8 @@ Route::prefix('auth')->group(function () {
 
 // Protocol public endpoints
 Route::get('/protocols', [ProtocolController::class, 'index']);
+Route::get('/protocols/categories', [ProtocolController::class, 'categories']);
+Route::get('/categories', [ProtocolController::class, 'categories']);
 Route::get('/protocols/{slug}', [ProtocolController::class, 'show']);
 
 // Thread public endpoints

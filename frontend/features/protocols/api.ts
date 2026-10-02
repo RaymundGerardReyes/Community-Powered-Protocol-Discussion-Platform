@@ -2,6 +2,19 @@ import { cache } from 'react';
 import { apiClient } from '@/lib/api-client';
 import type { PaginatedResponse, Protocol, Review, Thread } from '@/types';
 
+export interface CategoryOption {
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export async function fetchCategories(): Promise<CategoryOption[]> {
+  const { data } = await apiClient.get<{ data: CategoryOption[] }>(
+    '/api/v1/protocols/categories',
+  );
+  return data.data;
+}
+
 export interface ProtocolFilters {
   status?: string;
   category?: string;
@@ -26,7 +39,6 @@ export const fetchProtocol = cache(async (slug: string): Promise<Protocol> => {
   );
   return data.data;
 });
-
 
 export async function fetchProtocolThreads(
   protocolId: number,

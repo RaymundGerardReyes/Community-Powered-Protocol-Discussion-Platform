@@ -106,7 +106,12 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             }
 
             if (! empty($filters['category'])) {
-                $filterBy[] = 'category:=' . $filters['category'];
+                $raw = trim((string) $filters['category']);
+                $spaced = str_replace(['-', '_'], ' ', $raw);
+                $titleCase = ucwords(strtolower($spaced));
+                $variants = array_unique(array_filter([$raw, $spaced, $titleCase, strtolower($raw), strtolower($spaced)]));
+                $escapedVariants = array_map(fn($v) => '`' . str_replace('`', '', $v) . '`', $variants);
+                $filterBy[] = 'category:=[' . implode(', ', $escapedVariants) . ']';
             }
 
             $sortBy = match ($filters['sort'] ?? null) {
@@ -130,8 +135,9 @@ class ProtocolRepository implements ProtocolRepositoryInterface
             if (app()->environment('testing')) {
                 $results = $typesense->collections['protocol']->documents->search($searchParams);
             } else {
-                $cacheKey = 'typesense.catalog.' . md5(json_encode($searchParams));
-                $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 15, function () use ($typesense, $searchParams) {
+                $catalogVersion = \Illuminate\Support\Facades\Cache::get('typesense.catalog.version', 1);
+                $cacheKey = "typesense.catalog.v{$catalogVersion}." . md5(json_encode($searchParams));
+                $results = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($typesense, $searchParams) {
                     return $typesense->collections['protocol']->documents->search($searchParams);
                 });
             }
@@ -323,5 +329,61 @@ class ProtocolRepository implements ProtocolRepositoryInterface
         } catch (\Throwable $e) {
             abort(503, "Typesense search engine error: {$e->getMessage()}. Database fallback route has been permanently removed.");
         }
+    }
+
+    /**
+     * Retrieve all unique protocol categories with their counts dynamically.
+     *
+     * @return array<int, array{name: string, slug: string, count: int}>
+     */
+    public function getCategories(): array
+    {
+        $catalogVersion = \Illuminate\Support\Facades\Cache::get('typesense.catalog.version', 1);
+        $cacheKey = "typesense.categories.v{$catalogVersion}";
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
+            $typesense = $this->getTypesense();
+            if ($typesense !== null) {
+                try {
+                    $results = $typesense->collections['protocol']->documents->search([
+                        'q' => '*',
+                        'query_by' => 'title',
+                        'facet_by' => 'category',
+                        'max_facet_values' => 100,
+                        'per_page' => 0,
+                    ]);
+
+                    $facetCounts = $results['facet_counts'][0]['counts'] ?? [];
+                    if (! empty($facetCounts)) {
+                        $categories = [];
+                        foreach ($facetCounts as $facet) {
+                            $name = (string) $facet['value'];
+                            $categories[] = [
+                                'name' => $name,
+                                'slug' => \Illuminate\Support\Str::slug($name),
+                                'count' => (int) $facet['count'],
+                            ];
+                        }
+                        usort($categories, fn($a, $b) => strcmp($a['name'], $b['name']));
+                        return $categories;
+                    }
+                } catch (\Throwable) {}
+            }
+
+            // Fallback to database
+            return Protocol::query()
+                ->where('status', 'published')
+                ->select('category', \Illuminate\Support\Facades\DB::raw('count(*) as count'))
+                ->groupBy('category')
+                ->orderBy('category')
+                ->get()
+                ->map(fn($row) => [
+                    'name' => (string) $row->category,
+                    'slug' => \Illuminate\Support\Str::slug($row->category),
+                    'count' => (int) $row->count,
+                ])
+                ->values()
+                ->toArray();
+        });
     }
 }

@@ -403,3 +403,19 @@
 - **Queued Search Synchronization (ShouldQueue):**
   - Search index listeners (e.g. `SyncSearchIndex`) MUST implement `ShouldQueue`.
   - When decoupled queues (`QUEUE_CONNECTION=database` or `QUEUE_CONNECTION=redis`) are enabled, sync jobs push in $< 3\text{ ms}$, ensuring synchronous HTTP mutations achieve the $< 50\text{ ms}$ SLO tier (`X-Response-Time: < 50ms`) regardless of external search cluster network latency.
+
+---
+
+## 25. Dynamic Faceted Taxonomies, Multi-Word Quoting & Versioned Catalog Caching Standard
+- **Dynamic Faceted Taxonomy Invariant:**
+  - Frontend category filters and taxonomy options must never be hardcoded with static or out-of-domain values (e.g. crypto/blockchain tags in a wellness protocol platform).
+  - The backend provides `GET /api/v1/protocols/categories` returning dynamic facets directly from Typesense facet counts (`facet_by: 'category'`) with automatic database fallback (`Protocol::groupBy('category')`).
+  - The frontend consumes this dynamically via `useCategories()`, displaying real-time protocol counts per category (`Name (count)`), with graceful domain-specific fallbacks (`WELLNESS_CATEGORY_FALLBACKS`).
+- **Typesense Multi-Word Facet Backtick Quoting Invariant:**
+  - When filtering by multi-word facet values containing spaces (e.g. `Gut Health`), Typesense search queries (`filter_by`) require exact values to be enclosed in backticks (`` `Gut Health` ``). Unquoted values with spaces cause syntax errors or empty match sets.
+  - Filtering logic must normalize kebab-case slugs, spaces, and title-case variants wrapped in backticks: ``category:=[`Gut Health`, `gut-health`, `gut health`]``, allowing both kebab-case URLs (`?category=gut-health`) and raw facet strings to match seamlessly.
+- **Versioned Multi-Layer Catalog Cache Invalidation:**
+  - Direct searches across WAN to remote Typesense Cloud clusters can incur ~800ms+ roundtrips on cold cache misses.
+  - Catalog browsing and filtering endpoints must use multi-layer versioned caching (`typesense.catalog.v{$version}...`) with an appropriate TTL ($300\text{s}$ / $5\text{ minutes}$) to consistently deliver sub-50ms responses (`X-Response-Time: < 50ms`), fulfilling Rule 12 SLO.
+  - Cache invalidation occurs atomically by incrementing the catalog version counter upon model creation, updating, or deletion.
+

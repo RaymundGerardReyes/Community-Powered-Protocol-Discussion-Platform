@@ -264,4 +264,22 @@ class ProtocolTest extends TestCase
             'id' => $protocol->id,
         ]);
     }
+
+    public function test_can_fetch_protocol_categories_dynamically(): void
+    {
+        Protocol::factory()->create(['category' => 'Gut Health', 'status' => 'published']);
+        Protocol::factory()->create(['category' => 'Sleep', 'status' => 'published']);
+
+        $response = $this->getJson('/api/v1/protocols/categories');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['name', 'slug', 'count'],
+                ],
+            ]);
+
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+    }
 }

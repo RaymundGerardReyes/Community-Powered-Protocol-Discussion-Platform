@@ -34,6 +34,18 @@ class ProtocolController extends Controller
     }
 
     /**
+     * Display a list of available protocol categories with counts.
+     */
+    public function categories(): JsonResponse
+    {
+        $categories = $this->repository->getCategories();
+
+        return response()->json([
+            'data' => $categories,
+        ], 200);
+    }
+
+    /**
      * Display a specific protocol by slug.
      */
     public function show(string $slug): ProtocolResource
